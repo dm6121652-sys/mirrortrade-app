@@ -14,11 +14,20 @@ export class TradingProfileService {
 
   async updateForUser(userId: string, input: UpdateTradingProfileDto): Promise<TradingProfile> {
     const current = await this.getForUser(userId);
-    const values = {
+    const values: Partial<TradingProfile> = {
       ...input,
       allowedSymbols: input.allowedSymbols.map((symbol) => symbol.trim().toUpperCase()),
     };
-    if (current) return this.profiles.save({ ...current, ...values });
-    return this.profiles.save(this.profiles.create({ ...values, user: { id: userId } }));
+
+    if (current) {
+      return this.profiles.save({ ...current, ...values });
+    }
+
+    return this.profiles.save(
+      this.profiles.create({
+        ...values,
+        user: { id: userId },
+      }),
+    );
   }
 }

@@ -17,10 +17,10 @@ export class TradingProfile {
   killSwitchEnabled!: boolean;
 
   @Column({ name: 'max_risk_per_trade', type: 'numeric', precision: 6, scale: 3, default: 1 })
-  maxRiskPerTrade!: string;
+  maxRiskPerTrade!: number;
 
   @Column({ name: 'max_daily_loss', type: 'numeric', precision: 14, scale: 2, default: 0 })
-  maxDailyLoss!: string;
+  maxDailyLoss!: number;
 
   @Column({ name: 'max_open_positions', default: 3 })
   maxOpenPositions!: number;

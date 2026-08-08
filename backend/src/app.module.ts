@@ -1,43 +1,68 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import { BrokersModule } from './brokers/brokers.module';
+import { ConfigurationModule } from './config/config.module';
+import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
-import { RiskModule } from './risk/risk.module';
 import { TradingProfileModule } from './profiles/trading-profile.module';
+import { RiskModule } from './risk/risk.module';
+import { SecurityModule } from './security/security.module';
 import { SignalsModule } from './signals/signals.module';
-import { validateEnvironment } from './config/environment.validation';
+import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
   imports: [
+    // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env', '../.env'],
-      validate: validateEnvironment,
+      envFilePath: '.env',
     }),
-    TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.getOrThrow<string>('DATABASE_HOST'),
-        port: config.getOrThrow<number>('DATABASE_PORT'),
-        username: config.getOrThrow<string>('DATABASE_USER'),
-        password: config.getOrThrow<string>('DATABASE_PASSWORD'),
-        database: config.getOrThrow<string>('DATABASE_NAME'),
-        autoLoadEntities: true,
-        synchronize: false,
-        ssl: config.get<boolean>('DATABASE_SSL') ? { rejectUnauthorized: false } : false,
-      }),
-    }),
-    HealthModule,
-    RiskModule,
+
+    // Database
+    DatabaseModule,
+
+    // Core Modules
     AuthModule,
-    TradingProfileModule,
+    UsersModule,
+    ConfigurationModule,
+    SecurityModule,
+
+    // Trading Modules
     BrokersModule,
     SignalsModule,
+    TradingProfileModule,
+    RiskModule,
+
+    // External Integrations
+    TelegramModule, // ← NEW: Telegram signal ingestion
+
+    // Health Checks
+    HealthModule,
   ],
-  controllers: [AppController],
+  controllers: [],
+  providers: [],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(private readonly configService: ConfigService) {
+    this.logStartupInfo();
+  }
+
+  private logStartupInfo(): void {
+    const env = this.configService.get<string>('NODE_ENV', 'development');
+    const telegramToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN');
+
+    console.log(`
+╔════════════════════════════════════════════════╗
+║          MirrorTrade Backend Started           ║
+╠════════════════════════════════════════════════╣
+║ Environment:  ${env.padEnd(38)} ║
+║ Telegram Bot: ${telegramToken ? '✅ Configured'.padEnd(38) : '❌ Not Configured'.padEnd(38)} ║
+║ Modules:      Auth, Users, Brokers,            ║
+║               Signals, Telegram, Risk          ║
+╚════════════════════════════════════════════════╝
+    `);
+  }
+}

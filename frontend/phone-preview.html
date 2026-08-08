@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TRALLO — Phone Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      gap: 24px;
+      padding: 40px 20px;
+    }
+
+    /* ── Top bar ──────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .brand span { color: #1F06FF; }
+    .badge {
+      background: rgba(31,6,255,0.15);
+      border: 1px solid rgba(31,6,255,0.3);
+      color: #1F06FF;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 99px;
+      text-transform: uppercase;
+    }
+
+    /* ── Phone shell ──────────────────────── */
+    .phone-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .phone {
+      position: relative;
+      width: 375px;
+      height: 812px;
+      background: #1a1a1a;
+      border-radius: 54px;
+      padding: 14px;
+      box-shadow:
+        0 0 0 1.5px #333,
+        0 0 0 3px #111,
+        0 40px 120px rgba(0,0,0,0.9),
+        0 0 80px rgba(31,6,255,0.08),
+        inset 0 0 0 1px rgba(255,255,255,0.05);
+    }
+
+    /* Side buttons */
+    .phone::before {
+      content: '';
+      position: absolute;
+      left: -3px;
+      top: 120px;
+      width: 3px;
+      height: 36px;
+      background: #2a2a2a;
+      border-radius: 3px 0 0 3px;
+      box-shadow: 0 52px 0 #2a2a2a, 0 98px 0 #2a2a2a;
+    }
+    .phone::after {
+      content: '';
+      position: absolute;
+      right: -3px;
+      top: 160px;
+      width: 3px;
+      height: 64px;
+      background: #2a2a2a;
+      border-radius: 0 3px 3px 0;
+    }
+
+    .screen {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      border-radius: 42px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Dynamic Island */
+    .island {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 34px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .island-camera {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      border: 1px solid #222;
+      position: relative;
+    }
+    .island-camera::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #111;
+    }
+    .island-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #181818;
+    }
+
+    /* Status bar */
+    .statusbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 54px;
+      z-index: 9;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 14px 28px 0;
+      pointer-events: none;
+    }
+    .status-time {
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-icons svg {
+      fill: #fff;
+      opacity: 0.9;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 42px;
+      /* Push content down so it starts below the Dynamic Island */
+      padding-top: 54px;
+    }
+
+    /* ── Bottom hint ──────────────────────── */
+    .hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: rgba(255,255,255,0.2);
+      font-size: 12px;
+    }
+    .hint-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #1F06FF;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Refresh button */
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn:hover {
+      background: rgba(255,255,255,0.09);
+      color: #fff;
+    }
+    .btn-blue {
+      background: rgba(31,6,255,0.15);
+      border-color: rgba(31,6,255,0.3);
+      color: #1F06FF;
+    }
+    .btn-blue:hover {
+      background: rgba(31,6,255,0.25);
+      color: #4433FF;
+    }
+
+    /* Clock update */
+    #clock { transition: opacity 0.2s; }
+  </style>
+</head>
+<body>
+
+  <!-- Top label -->
+  <div class="topbar">
+    <div class="brand">TRALL<span>O</span></div>
+    <div class="badge">Live preview</div>
+  </div>
+
+  <!-- Phone frame -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="screen">
+
+        <!-- Dynamic Island -->
+        <div class="island">
+          <div class="island-camera"></div>
+          <div class="island-dot"></div>
+        </div>
+
+        <!-- Status bar -->
+        <div class="statusbar">
+          <span class="status-time" id="clock">9:41</span>
+          <div class="status-icons">
+            <!-- Signal -->
+            <svg width="16" height="12" viewBox="0 0 16 12">
+              <rect x="0" y="8" width="3" height="4" rx="1"/>
+              <rect x="4.5" y="5" width="3" height="7" rx="1"/>
+              <rect x="9" y="2" width="3" height="10" rx="1"/>
+              <rect x="13.5" y="0" width="2.5" height="12" rx="1"/>
+            </svg>
+            <!-- WiFi -->
+            <svg width="16" height="12" viewBox="0 0 16 12">
+              <path d="M8 9.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm0-3.5a6 6 0 0 1 4.24 1.76l-1.41 1.41A4 4 0 0 0 8 8a4 4 0 0 0-2.83 1.17L3.76 7.76A6 6 0 0 1 8 6zm0-3.5a9.5 9.5 0 0 1 6.72 2.78L13.3 6.7A7.5 7.5 0 0 0 8 4.5a7.5 7.5 0 0 0-5.3 2.2L1.28 5.28A9.5 9.5 0 0 1 8 2.5z" opacity=".9"/>
+            </svg>
+            <!-- Battery -->
+            <svg width="26" height="12" viewBox="0 0 26 12">
+              <rect x="0" y="1" width="22" height="10" rx="2.5" stroke="white" stroke-width="1" fill="none" opacity="0.4"/>
+              <rect x="23" y="4" width="2" height="4" rx="1" fill="white" opacity="0.4"/>
+              <rect x="1.5" y="2.5" width="17" height="7" rx="1.5" fill="white"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- App iframe -->
+        <iframe
+          id="appFrame"
+          src="http://localhost:8081"
+          title="TRALLO App Preview"
+          allow="same-origin"
+        ></iframe>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn" onclick="document.getElementById('appFrame').src = document.getElementById('appFrame').src">
+      ↺ Reload app
+    </button>
+    <button class="btn btn-blue" onclick="window.open('http://localhost:8081','_blank')">
+      ↗ Open full screen
+    </button>
+  </div>
+
+  <!-- Hint -->
+  <div class="hint">
+    <div class="hint-dot"></div>
+    Connected to localhost:8081 — changes hot-reload automatically
+  </div>
+
+  <script>
+    // Live clock
+    function updateClock() {
+      const now = new Date();
+      const h = now.getHours();
+      const m = now.getMinutes().toString().padStart(2, '0');
+      document.getElementById('clock').textContent = `${h}:${m}`;
+    }
+    updateClock();
+    setInterval(updateClock, 10000);
+  </script>
+
+</body>
+</html>
