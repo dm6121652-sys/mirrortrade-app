@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import {
   Animated,
   Image,
@@ -27,12 +28,17 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  
+  const { signIn, signUp } = useAuth();
 
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   const switchTab = (newTab: Tab) => {
     if (newTab === tab) return;
     setTab(newTab);
+    setErrorMsg('');
     Animated.spring(slideAnim, {
       toValue: newTab === 'signup' ? 1 : 0,
       tension: 80,
@@ -148,6 +154,12 @@ export default function Auth() {
                   onRightPress={() => setShowConfirm(v => !v)}
                 />
               )}
+              
+              {errorMsg !== '' && (
+                <Text style={{ color: colors.tradeLoss, fontFamily: 'Inter_500Medium', fontSize: 13, marginBottom: 16 }}>
+                  {errorMsg}
+                </Text>
+              )}
 
               {tab === 'signin' && (
                 <Pressable style={s.forgot}>
@@ -157,23 +169,35 @@ export default function Auth() {
 
               {/* Submit */}
               <Pressable
-                onPress={() => {
-                  if (tab === 'signup') {
-                    router.replace('/onboarding');
-                  } else {
-                    router.replace('/(tabs)');
+                disabled={isSubmitting}
+                onPress={async () => {
+                  setErrorMsg('');
+                  setIsSubmitting(true);
+                  try {
+                    if (tab === 'signup') {
+                      if (password !== confirm) {
+                        throw new Error('Passwords do not match');
+                      }
+                      await signUp(email, password);
+                    } else {
+                      await signIn(email, password);
+                    }
+                  } catch (e: any) {
+                    setErrorMsg(e.response?.data?.message || e.message || 'An error occurred');
+                  } finally {
+                    setIsSubmitting(false);
                   }
                 }}
                 style={({ pressed }) => [
                   s.submitBtn,
                   { backgroundColor: colors.cyan },
-                  pressed && { opacity: 0.87, transform: [{ scale: 0.98 }] },
+                  (pressed || isSubmitting) && { opacity: 0.87, transform: [{ scale: 0.98 }] },
                 ]}
               >
                 <Text style={[s.submitText, { color: colors.base }]}>
-                  {tab === 'signin' ? 'Sign in' : 'Create account'}
+                  {isSubmitting ? 'Please wait...' : (tab === 'signin' ? 'Sign in' : 'Create account')}
                 </Text>
-                <Ionicons name="arrow-forward" size={17} color={colors.base} />
+                {!isSubmitting && <Ionicons name="arrow-forward" size={17} color={colors.base} />}
               </Pressable>
 
               {/* Divider */}
@@ -259,7 +283,11 @@ function Field({
           style={s.fieldIcon}
         />
         <TextInput
-          style={[s.input, { color: colors.text }]}
+          style={[
+            s.input,
+            { color: colors.text },
+            Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
+          ]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}

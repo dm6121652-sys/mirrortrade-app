@@ -19,6 +19,9 @@ export class User {
   @Column({ name: 'is_active', default: true })
   isActive!: boolean;
 
+  @Column({ name: 'onboarding_completed', default: false })
+  onboardingCompleted!: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

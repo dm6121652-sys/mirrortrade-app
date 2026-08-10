@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { onboardingApi } from '@/api/onboarding';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -29,6 +30,8 @@ export default function Onboarding() {
   const [riskDrawdown, setRiskDrawdown] = useState(10);
   const [riskDailyLoss, setRiskDailyLoss] = useState(5);
   const [derivToken, setDerivToken] = useState('');
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [finishError, setFinishError] = useState('');
 
   const activeChannelName = channelInput.trim() || 'Habbyforex Signals';
 
@@ -549,16 +552,40 @@ export default function Onboarding() {
                   </View>
                 </View>
 
-                <Pressable
-                  onPress={() => router.replace('/(tabs)')}
-                  style={({ pressed }) => [
-                    s.primaryBtn,
-                    { backgroundColor: colors.cyan, marginTop: 24 },
-                    pressed && { opacity: 0.85 },
-                  ]}
-                >
-                  <Text style={[s.primaryBtnText, { color: colors.base }]}>Finish Setup</Text>
-                </Pressable>
+                <View style={{ gap: 8 }}>
+                  {finishError !== '' && (
+                    <Text style={{ color: colors.danger, fontFamily: 'Inter_500Medium', fontSize: 13, textAlign: 'center' }}>
+                      {finishError}
+                    </Text>
+                  )}
+                  <Pressable
+                    disabled={isFinishing}
+                    onPress={async () => {
+                      setFinishError('');
+                      setIsFinishing(true);
+                      try {
+                        await onboardingApi.complete({
+                          maxRiskPerTrade: riskDrawdown,
+                          maxDailyLoss: riskDailyLoss,
+                        });
+                        router.replace('/(tabs)');
+                      } catch (e: any) {
+                        setFinishError(e.response?.data?.message || 'Failed to save settings. Please try again.');
+                      } finally {
+                        setIsFinishing(false);
+                      }
+                    }}
+                    style={({ pressed }) => [
+                      s.primaryBtn,
+                      { backgroundColor: colors.cyan, marginTop: 24 },
+                      (pressed || isFinishing) && { opacity: 0.85 },
+                    ]}
+                  >
+                    <Text style={[s.primaryBtnText, { color: colors.base }]}>
+                      {isFinishing ? 'Saving...' : 'Finish Setup'}
+                    </Text>
+                  </Pressable>
+                </View>
               </View>
             )}
           </ScrollView>
