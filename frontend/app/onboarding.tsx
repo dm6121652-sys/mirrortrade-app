@@ -243,7 +243,7 @@ export default function Onboarding() {
                   </Pressable>
                 </View>
                 {brokerError !== '' && (
-                  <Text style={{ color: colors.danger, fontFamily: 'Inter_500Medium', fontSize: 13, marginTop: 8 }}>{brokerError}</Text>
+                  <Text style={{ color: colors.tradeLoss, fontFamily: 'Inter_500Medium', fontSize: 13, marginTop: 8 }}>{brokerError}</Text>
                 )}
                 <Pressable onPress={handleNextStep} style={s.laterLink}><Text style={[s.laterLinkText, { color: colors.subtle }]}>I’ll connect my broker later</Text></Pressable>
               </View>
@@ -416,7 +416,7 @@ export default function Onboarding() {
 
                 {/* CTA Buttons */}
                 {channelError !== '' && (
-                  <Text style={{ color: colors.danger, fontFamily: 'Inter_500Medium', fontSize: 13, marginTop: 8, paddingHorizontal: 4 }}>{channelError}</Text>
+                  <Text style={{ color: colors.tradeLoss, fontFamily: 'Inter_500Medium', fontSize: 13, marginTop: 8, paddingHorizontal: 4 }}>{channelError}</Text>
                 )}
                 <View style={s.btnRow}>
                   <Pressable
@@ -606,7 +606,7 @@ export default function Onboarding() {
 
                 <View style={{ gap: 8 }}>
                   {finishError !== '' && (
-                    <Text style={{ color: colors.danger, fontFamily: 'Inter_500Medium', fontSize: 13, textAlign: 'center' }}>
+                    <Text style={{ color: colors.tradeLoss, fontFamily: 'Inter_500Medium', fontSize: 13, textAlign: 'center' }}>
                       {finishError}
                     </Text>
                   )}

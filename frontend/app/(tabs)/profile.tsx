@@ -4,20 +4,63 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, Page } from '@/components/layout';
 import { BrandMark, Pill, ScreenTitle, ThemeToggle } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 
 type Section = 'risk' | 'broker' | 'notifications' | 'security' | null;
-const items: { id: Exclude<Section,null>; icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string }[] = [
-  { id:'risk', icon:'shield-checkmark-outline', title:'Risk profile', subtitle:'Daily limit, sizing and kill switch' },
-  { id:'broker', icon:'wallet-outline', title:'Deriv Demo', subtitle:'Connected · $12,450.80' },
-  { id:'notifications', icon:'notifications-outline', title:'Notifications', subtitle:'Trade and approval alerts' },
-  { id:'security', icon:'lock-closed-outline', title:'Security', subtitle:'Biometric lock and 2FA' },
+const items: { id: Exclude<Section, null>; icon: keyof typeof Ionicons.glyphMap; title: string; subtitle: string }[] = [
+  { id: 'risk', icon: 'shield-checkmark-outline', title: 'Risk profile', subtitle: 'Daily limit, sizing and kill switch' },
+  { id: 'broker', icon: 'wallet-outline', title: 'Deriv Demo', subtitle: 'Connected · $12,450.80' },
+  { id: 'notifications', icon: 'notifications-outline', title: 'Notifications', subtitle: 'Trade and approval alerts' },
+  { id: 'security', icon: 'lock-closed-outline', title: 'Security', subtitle: 'Biometric lock and 2FA' },
 ];
 
-export default function Profile(){
-  const { colors }=useTheme(); const [active,setActive]=useState<Section>(null); const [killSwitch,setKillSwitch]=useState(true); const [approvalAlerts,setApprovalAlerts]=useState(true); const [tradeAlerts,setTradeAlerts]=useState(true); const [biometrics,setBiometrics]=useState(false);
-  return <Page><ScreenTitle eyebrow="Account" title="Profile" action={<ThemeToggle/>}/><Card style={s.user}><View style={[s.avatar,{backgroundColor:colors.cyan}]}><Text style={[s.avatarText,{color:colors.base}]}>A</Text></View><View style={{flex:1}}><Text style={[s.name,{color:colors.text}]}>Alex Morgan</Text><Text style={[s.email,{color:colors.subtle}]}>alex@mirrortrade.demo</Text></View><Pill label="Demo" tone="cyan"/></Card><Text style={[s.section,{color:colors.subtle}]}>SETTINGS</Text>{items.map((item)=>{const open=active===item.id; return <View key={item.id} style={[s.settingBlock,{borderBottomColor:colors.border}]}><Pressable onPress={()=>setActive(open?null:item.id)} style={s.item}><View style={[s.itemIcon,{backgroundColor:colors.elevated,borderColor:colors.border}]}><Ionicons name={item.icon} color={colors.cyan} size={19}/></View><View style={{flex:1}}><Text style={[s.itemTitle,{color:colors.text}]}>{item.title}</Text><Text style={[s.itemSub,{color:colors.subtle}]}>{item.subtitle}</Text></View><Ionicons name={open?'chevron-up':'chevron-forward'} color={colors.subtle} size={18}/></Pressable>{open&&<View style={[s.panel,{backgroundColor:colors.elevated,borderColor:colors.border}]}>{item.id==='risk'&&<><SettingRow title="Daily loss limit" detail="$500.00"/><SettingRow title="Maximum open trades" detail="5 positions"/><SwitchRow title="Account kill switch" detail="Pause copying after your loss limit" value={killSwitch} onToggle={()=>setKillSwitch(!killSwitch)}/></>}{item.id==='broker'&&<><SettingRow title="Account" detail="Demo · CR1234567"/><SettingRow title="Available balance" detail="$12,450.80"/><Pressable style={[s.action,{borderColor:colors.border}]}><Ionicons name="refresh-outline" size={16} color={colors.cyan}/><Text style={[s.actionText,{color:colors.text}]}>Refresh account data</Text></Pressable><Pressable style={[s.action,{borderColor:colors.border}]}><Ionicons name="link-outline" size={16} color={colors.cyan}/><Text style={[s.actionText,{color:colors.text}]}>Manage connection</Text></Pressable></>}{item.id==='notifications'&&<><SwitchRow title="Manual approvals" detail="High-priority signal requests" value={approvalAlerts} onToggle={()=>setApprovalAlerts(!approvalAlerts)}/><SwitchRow title="Trade outcomes" detail="Executed, skipped and failed trades" value={tradeAlerts} onToggle={()=>setTradeAlerts(!tradeAlerts)}/></>}{item.id==='security'&&<><SwitchRow title="Biometric unlock" detail="Require Face ID or fingerprint" value={biometrics} onToggle={()=>setBiometrics(!biometrics)}/><SettingRow title="Two-factor authentication" detail="Not enabled"/><Pressable style={[s.action,{borderColor:colors.border}]}><Ionicons name="key-outline" size={16} color={colors.cyan}/><Text style={[s.actionText,{color:colors.text}]}>Set up two-factor authentication</Text></Pressable></>}</View>}</View>})}<Pressable onPress={()=>router.replace('/welcome')} style={[s.signOut,{borderColor:colors.tradeLoss,backgroundColor:colors.dangerSurface}]}><Ionicons name="log-out-outline" size={18} color={colors.tradeLoss}/><Text style={[s.signOutText,{color:colors.tradeLoss}]}>Sign out</Text></Pressable><View style={s.footer}><BrandMark compact/><Text style={[s.version,{color:colors.disabled}]}>MirrorTrade · Preview build 0.1</Text></View></Page>
+export default function Profile() {
+  const { colors } = useTheme();
+  const { signOut } = useAuth();
+  const [active, setActive] = useState<Section>(null);
+  const [killSwitch, setKillSwitch] = useState(true);
+  const [approvalAlerts, setApprovalAlerts] = useState(true);
+  const [tradeAlerts, setTradeAlerts] = useState(true);
+  const [biometrics, setBiometrics] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace('/welcome');
+  };
+
+  return (
+    <Page>
+      <ScreenTitle eyebrow="Account" title="Profile" action={<ThemeToggle />} />
+      <Card style={s.user}>
+        <View style={[s.avatar, { backgroundColor: colors.cyan }]}><Text style={[s.avatarText, { color: colors.base }]}>A</Text></View>
+        <View style={{ flex: 1 }}><Text style={[s.name, { color: colors.text }]}>Alex Morgan</Text><Text style={[s.email, { color: colors.subtle }]}>alex@mirrortrade.demo</Text></View>
+        <Pill label="Demo" tone="cyan" />
+      </Card>
+      <Text style={[s.section, { color: colors.subtle }]}>SETTINGS</Text>
+      {items.map((item) => {
+        const open = active === item.id;
+        return <View key={item.id} style={[s.settingBlock, { borderBottomColor: colors.border }]}>
+          <Pressable onPress={() => setActive(open ? null : item.id)} style={s.item}>
+            <View style={[s.itemIcon, { backgroundColor: colors.elevated, borderColor: colors.border }]}><Ionicons name={item.icon} color={colors.cyan} size={19} /></View>
+            <View style={{ flex: 1 }}><Text style={[s.itemTitle, { color: colors.text }]}>{item.title}</Text><Text style={[s.itemSub, { color: colors.subtle }]}>{item.subtitle}</Text></View>
+            <Ionicons name={open ? 'chevron-up' : 'chevron-forward'} color={colors.subtle} size={18} />
+          </Pressable>
+          {open && <View style={[s.panel, { backgroundColor: colors.elevated, borderColor: colors.border }]}>
+            {item.id === 'risk' && <><SettingRow title="Daily loss limit" detail="$500.00" /><SettingRow title="Maximum open trades" detail="5 positions" /><SwitchRow title="Account kill switch" detail="Pause copying after your loss limit" value={killSwitch} onToggle={() => setKillSwitch(!killSwitch)} /></>}
+            {item.id === 'broker' && <><SettingRow title="Account" detail="Demo · CR1234567" /><SettingRow title="Available balance" detail="$12,450.80" /><Pressable style={[s.action, { borderColor: colors.border }]}><Ionicons name="refresh-outline" size={16} color={colors.cyan} /><Text style={[s.actionText, { color: colors.text }]}>Refresh account data</Text></Pressable><Pressable style={[s.action, { borderColor: colors.border }]}><Ionicons name="link-outline" size={16} color={colors.cyan} /><Text style={[s.actionText, { color: colors.text }]}>Manage connection</Text></Pressable></>}
+            {item.id === 'notifications' && <><SwitchRow title="Manual approvals" detail="High-priority signal requests" value={approvalAlerts} onToggle={() => setApprovalAlerts(!approvalAlerts)} /><SwitchRow title="Trade outcomes" detail="Executed, skipped and failed trades" value={tradeAlerts} onToggle={() => setTradeAlerts(!tradeAlerts)} /></>}
+            {item.id === 'security' && <><SwitchRow title="Biometric unlock" detail="Require Face ID or fingerprint" value={biometrics} onToggle={() => setBiometrics(!biometrics)} /><SettingRow title="Two-factor authentication" detail="Not enabled" /><Pressable style={[s.action, { borderColor: colors.border }]}><Ionicons name="key-outline" size={16} color={colors.cyan} /><Text style={[s.actionText, { color: colors.text }]}>Set up two-factor authentication</Text></Pressable></>}
+          </View>}
+        </View>;
+      })}
+      <Pressable onPress={handleSignOut} style={[s.signOut, { borderColor: colors.tradeLoss, backgroundColor: colors.dangerSurface }]}><Ionicons name="log-out-outline" size={18} color={colors.tradeLoss} /><Text style={[s.signOutText, { color: colors.tradeLoss }]}>Sign out</Text></Pressable>
+      <View style={s.footer}><BrandMark compact /><Text style={[s.version, { color: colors.disabled }]}>MirrorTrade · Preview build 0.1</Text></View>
+    </Page>
+  );
 }
-function SettingRow({title,detail}:{title:string;detail:string}){const {colors}=useTheme();return <View style={s.settingRow}><Text style={[s.rowTitle,{color:colors.text}]}>{title}</Text><Text style={[s.rowDetail,{color:colors.subtle}]}>{detail}</Text></View>}
-function SwitchRow({title,detail,value,onToggle}:{title:string;detail:string;value:boolean;onToggle:()=>void}){const {colors}=useTheme();return <Pressable onPress={onToggle} style={s.switchRow}><View style={{flex:1}}><Text style={[s.rowTitle,{color:colors.text}]}>{title}</Text><Text style={[s.rowDetail,{color:colors.subtle}]}>{detail}</Text></View><View style={[s.switch,{backgroundColor:value?colors.cyan:colors.hover}]}><View style={[s.knob,value&&s.knobOn]}/></View></Pressable>}
-const s=StyleSheet.create({user:{flexDirection:'row',alignItems:'center',gap:12},avatar:{width:48,height:48,borderRadius:16,alignItems:'center',justifyContent:'center'},avatarText:{fontFamily:'Inter_700Bold',fontSize:20},name:{fontFamily:'Inter_700Bold',fontSize:16},email:{fontFamily:'Inter_400Regular',fontSize:12,marginTop:3},section:{fontFamily:'Inter_700Bold',fontSize:10,letterSpacing:1,marginTop:28,marginBottom:10},settingBlock:{borderBottomWidth:1},item:{flexDirection:'row',alignItems:'center',gap:11,paddingVertical:14},itemIcon:{width:38,height:38,borderRadius:12,borderWidth:1,alignItems:'center',justifyContent:'center'},itemTitle:{fontFamily:'Inter_600SemiBold',fontSize:14},itemSub:{fontFamily:'Inter_400Regular',fontSize:11,marginTop:3},panel:{borderWidth:1,borderRadius:14,padding:13,marginBottom:14,gap:12},settingRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},switchRow:{flexDirection:'row',alignItems:'center',gap:12},rowTitle:{fontFamily:'Inter_600SemiBold',fontSize:12},rowDetail:{fontFamily:'Inter_400Regular',fontSize:10,marginTop:3},switch:{width:42,height:24,borderRadius:12,padding:3},knob:{width:18,height:18,borderRadius:9,backgroundColor:'#FFFFFF'},knobOn:{alignSelf:'flex-end'},action:{height:40,borderWidth:1,borderRadius:10,paddingHorizontal:11,flexDirection:'row',alignItems:'center',gap:8},actionText:{fontFamily:'Inter_600SemiBold',fontSize:11},signOut:{height:50,borderWidth:1,borderRadius:14,marginTop:32,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8},signOutText:{fontFamily:'Inter_700Bold',fontSize:14},footer:{alignItems:'center',gap:9,marginTop:32},version:{fontFamily:'Inter_400Regular',fontSize:11}});
+
+function SettingRow({ title, detail }: { title: string; detail: string }) { const { colors } = useTheme(); return <View style={s.settingRow}><Text style={[s.rowTitle, { color: colors.text }]}>{title}</Text><Text style={[s.rowDetail, { color: colors.subtle }]}>{detail}</Text></View>; }
+function SwitchRow({ title, detail, value, onToggle }: { title: string; detail: string; value: boolean; onToggle: () => void }) { const { colors } = useTheme(); return <Pressable onPress={onToggle} style={s.switchRow}><View style={{ flex: 1 }}><Text style={[s.rowTitle, { color: colors.text }]}>{title}</Text><Text style={[s.rowDetail, { color: colors.subtle }]}>{detail}</Text></View><View style={[s.switch, { backgroundColor: value ? colors.cyan : colors.hover }]}><View style={[s.knob, value && s.knobOn]} /></View></Pressable>; }
+
+const s = StyleSheet.create({ user:{flexDirection:'row',alignItems:'center',gap:12}, avatar:{width:48,height:48,borderRadius:16,alignItems:'center',justifyContent:'center'}, avatarText:{fontFamily:'Inter_700Bold',fontSize:20}, name:{fontFamily:'Inter_700Bold',fontSize:16}, email:{fontFamily:'Inter_400Regular',fontSize:12,marginTop:3}, section:{fontFamily:'Inter_700Bold',fontSize:10,letterSpacing:1,marginTop:28,marginBottom:10}, settingBlock:{borderBottomWidth:1}, item:{flexDirection:'row',alignItems:'center',gap:11,paddingVertical:14}, itemIcon:{width:38,height:38,borderRadius:12,borderWidth:1,alignItems:'center',justifyContent:'center'}, itemTitle:{fontFamily:'Inter_600SemiBold',fontSize:14}, itemSub:{fontFamily:'Inter_400Regular',fontSize:11,marginTop:3}, panel:{borderWidth:1,borderRadius:14,padding:13,marginBottom:14,gap:12}, settingRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}, switchRow:{flexDirection:'row',alignItems:'center',gap:12}, rowTitle:{fontFamily:'Inter_600SemiBold',fontSize:12}, rowDetail:{fontFamily:'Inter_400Regular',fontSize:10,marginTop:3}, switch:{width:42,height:24,borderRadius:12,padding:3}, knob:{width:18,height:18,borderRadius:9,backgroundColor:'#FFFFFF'}, knobOn:{alignSelf:'flex-end'}, action:{height:40,borderWidth:1,borderRadius:10,paddingHorizontal:11,flexDirection:'row',alignItems:'center',gap:8}, actionText:{fontFamily:'Inter_600SemiBold',fontSize:11}, signOut:{height:50,borderWidth:1,borderRadius:14,marginTop:32,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8}, signOutText:{fontFamily:'Inter_700Bold',fontSize:14}, footer:{alignItems:'center',gap:9,marginTop:32}, version:{fontFamily:'Inter_400Regular',fontSize:11} });

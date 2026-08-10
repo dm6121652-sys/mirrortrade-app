@@ -2,15 +2,17 @@ import { Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TelegramService } from './telegram.service';
 import { TelegramController } from './telegram.controller';
+import { ChannelSourcesController } from './channel-sources.controller';
+import { MtprotoService } from './mtproto.service';
 import { Signal } from '../signals/signal.entity';
 import { SignalSource } from '../signals/signal-source.entity';
 import { SignalParser } from '../signals/signal.parser';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Signal, SignalSource])],
-  providers: [TelegramService, SignalParser],
-  controllers: [TelegramController],
-  exports: [TelegramService],
+  providers: [TelegramService, SignalParser, MtprotoService],
+  controllers: [TelegramController, ChannelSourcesController],
+  exports: [TelegramService, MtprotoService],
 })
 export class TelegramModule implements OnModuleInit {
   constructor(private readonly telegramService: TelegramService) {}

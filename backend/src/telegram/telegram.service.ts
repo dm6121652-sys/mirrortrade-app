@@ -8,6 +8,7 @@ import { Signal } from '../signals/signal.entity';
 import { SignalSource } from '../signals/signal-source.entity';
 import { SignalParser } from '../signals/signal.parser';
 import { TelegramMessage, TelegramUpdate, TelegramUser } from './telegram.types';
+import { MtprotoService } from './mtproto.service';
 
 @Injectable()
 export class TelegramService {
@@ -19,13 +20,60 @@ export class TelegramService {
   constructor(
     private readonly configService: ConfigService,
     private readonly signalParser: SignalParser,
+    private readonly mtproto: MtprotoService,
     @InjectRepository(Signal)
     private readonly signalRepository: Repository<Signal>,
     @InjectRepository(SignalSource)
     private readonly signalSourceRepository: Repository<SignalSource>,
   ) {
-    this.botToken = this.configService.getOrThrow<string>('TELEGRAM_BOT_TOKEN');
-    this.webhookUrl = this.configService.getOrThrow<string>('TELEGRAM_BOT_WEBHOOK_URL');
+    this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN') || '';
+    this.webhookUrl = this.configService.get<string>('TELEGRAM_BOT_WEBHOOK_URL') || '';
+  }
+
+  /**
+   * Called after the module is fully initialized — wire MTProto message handler
+   */
+  onModuleInit() {
+    this.mtproto.setMessageHandler(async (chatId, text, messageId) => {
+      await this.processMtprotoMessage(chatId, text, messageId);
+    });
+    this.logger.log('MTProto message handler registered');
+  }
+
+  /**
+   * Process a message received via MTProto userbot
+   */
+  async processMtprotoMessage(chatId: string, text: string, messageId: string): Promise<void> {
+    try {
+      let source = await this.signalSourceRepository.findOne({
+        where: { platform: 'telegram', external_chat_id: chatId },
+      });
+
+      if (!source) return; // Not a monitored channel — ignore
+
+      const existingSignal = await this.signalRepository.findOne({
+        where: { source: { id: source.id }, external_message_id: messageId },
+      });
+      if (existingSignal) return; // Duplicate
+
+      const parseResult = this.signalParser.parse(text);
+
+      const signal = this.signalRepository.create({
+        source,
+        external_message_id: messageId,
+        raw_message: text,
+        parsed_payload: parseResult.status === 'parsed' ? parseResult.signal : null,
+        parse_confidence: parseResult.confidence,
+        status: parseResult.status === 'parsed' ? 'parsed' : 'rejected',
+        received_at: new Date(),
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
+
+      await this.signalRepository.save(signal);
+      this.logger.log(`[MTProto] Signal saved: ${messageId} | ${signal.status}`);
+    } catch (err: any) {
+      this.logger.error(`[MTProto] Error processing message: ${err.message}`);
+    }
   }
 
   /**
