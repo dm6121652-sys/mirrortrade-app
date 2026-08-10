@@ -1,4 +1,4 @@
-import client from './client';
+import { apiClient } from './client';
 
 export interface TelegramChannelInfo {
   id: string;
@@ -14,7 +14,7 @@ export const telegramApi = {
    * Resolve, join, and store a public Telegram channel using MTProto
    */
   connectChannel: async (channel_identifier: string): Promise<{ ok: boolean; channel: TelegramChannelInfo }> => {
-    const response = await client.post('/telegram/sources', { channel_identifier });
+    const response = await apiClient.post('/telegram/sources', { channel_identifier });
     return response.data;
   },
 
@@ -22,7 +22,7 @@ export const telegramApi = {
    * List all connected Telegram channels for the current user
    */
   listChannels: async () => {
-    const response = await client.get('/telegram/sources');
+    const response = await apiClient.get('/telegram/sources');
     return response.data;
   }
 };

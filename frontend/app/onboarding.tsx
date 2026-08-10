@@ -25,7 +25,7 @@ export default function Onboarding() {
   const { colors, theme, toggleTheme } = useTheme();
 
   // Onboarding states
-  const [step, setStep] = useState(0); // 0: Goal, 1: Broker, 2: Connect Telegram, 3: Connected Success, 4: Risk Shield
+  const [step, setStep] = useState(0); // 0: Goal, 1: Broker, 2: Connect, 3: Success, 4: Risk Shield
   const [goal, setGoal] = useState<Goal>('growth');
   const [channelInput, setChannelInput] = useState('');
   const [isMember, setIsMember] = useState(false);
@@ -247,11 +247,95 @@ export default function Onboarding() {
                 {brokerError !== '' && (
                   <Text style={{ color: colors.tradeLoss, fontFamily: 'Inter_500Medium', fontSize: 13, marginTop: 8 }}>{brokerError}</Text>
                 )}
+                <Pressable onPress={handleNextStep} style={s.laterLink}><Text style={[s.laterLinkText, { color: colors.subtle }]}>I’ll connect my broker later</Text></Pressable>
               </View>
             )}
 
-            {/* ── STEP 2: CONNECTED SUCCESS ──────────────────── */}
             {step === 2 && (
+              <View style={s.container}>
+                <View style={s.iconTitleContainer}>
+                  <Text style={[s.headingLarge, { color: colors.text }]}>
+                    🎯 Connect Trading Signals
+                  </Text>
+                  <Text style={[s.subheading, { color: colors.muted }]}>
+                    Get signals from Telegram channels and execute trades automatically.
+                  </Text>
+                </View>
+
+                <View style={[s.inputWrapper, { borderColor: colors.border }]}>
+                  <Text style={[s.inputLabel, { color: colors.muted }]}>Enter channel or group name</Text>
+                  <TextInput
+                    style={[s.inputField, { color: colors.text, borderColor: colors.border }]}
+                    value={channelInput}
+                    onChangeText={setChannelInput}
+                    placeholder="@habbyforex_signals"
+                    placeholderTextColor={colors.disabled}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <Text style={[s.helperHint, { color: colors.muted }]}>
+                    or: forex-signals-group{'\n'}or: -1001234567890 (group ID)
+                  </Text>
+
+                  <View style={[s.infoBox, { backgroundColor: colors.elevated, borderColor: colors.border }]}>
+                    <Text style={[s.infoBoxTitle, { color: colors.text }]}>ℹ️ How to find your group ID:</Text>
+                    <Text style={[s.infoBoxBody, { color: colors.muted }]}>
+                      • Go to Telegram{'\n'}
+                      • Open the channel/group{'\n'}
+                      • Right-click → Copy Group Link{'\n'}
+                      • Find number after "c/"
+                    </Text>
+                  </View>
+                </View>
+
+                {channelError !== '' && (
+                  <Text style={{ color: colors.tradeLoss, fontFamily: 'Inter_500Medium', fontSize: 13, paddingBottom: 8 }}>{channelError}</Text>
+                )}
+                <View style={s.btnRow}>
+                  <Pressable
+                    onPress={() => setStep(4)} // Skip to Risk Shield
+                    style={({ pressed }) => [
+                      s.secondaryBtn,
+                      { borderColor: colors.border },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Text style={[s.secondaryBtnText, { color: colors.subtle }]}>Skip for Now</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={async () => {
+                      if (!channelInput.trim()) return;
+                      setChannelError('');
+                      setIsChannelConnecting(true);
+                      try {
+                        const res = await telegramApi.connectChannel(channelInput.trim());
+                        setChannelDetails(res.channel);
+                        setConnectedChannels((prev) => [...prev, res.channel.title]);
+                        setStep(3);
+                      } catch (e: any) {
+                        setChannelError(e.response?.data?.message || 'Failed to connect. Ensure it is a public channel.');
+                      } finally {
+                        setIsChannelConnecting(false);
+                      }
+                    }}
+                    disabled={!channelInput.trim() || isChannelConnecting}
+                    style={({ pressed }) => [
+                      s.primaryBtn,
+                      { backgroundColor: colors.cyan, flex: 1.3 },
+                      (!channelInput.trim() || pressed || isChannelConnecting) && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Text style={[s.primaryBtnText, { color: colors.base }]}>
+                      {isChannelConnecting ? 'Connecting...' : 'Continue'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+
+            {/* ── STEP 3: CONNECTED SUCCESS ──────────────────── */}
+            {step === 3 && (
               <View style={s.container}>
                 <View style={s.iconTitleContainer}>
                   <Text style={[s.headingLarge, { color: colors.text }]}>
@@ -318,7 +402,7 @@ export default function Onboarding() {
                   </Pressable>
 
                   <Pressable
-                    onPress={() => setStep(3)} // Continue to Risk Shield
+                    onPress={() => setStep(4)} // Continue to Risk Shield
                     style={({ pressed }) => [
                       s.primaryBtn,
                       { backgroundColor: colors.cyan, flex: 1.3 },
@@ -331,10 +415,8 @@ export default function Onboarding() {
               </View>
             )}
 
-            {/* ── STEP 3: RISK SHIELD ────────────────────────── */}
-            {step === 3 && (
-              <View style={s.container}>
-                <View style={s.iconTitleContainer}>
+            {/* ── STEP 4: RISK SHIELD ────────────────────────── */}
+            {step === 4 && (
               <View style={s.container}>
                 <View style={s.iconTitleContainer}>
                   <View style={[s.stepIconBox, { backgroundColor: colors.elevated }]}>
