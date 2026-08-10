@@ -1,28 +1,47 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, Page } from '@/components/layout';
 import { ScreenTitle, ThemeToggle } from '@/components/ui';
-import { trades, type Trade } from '@/data/demo';
+import { signalsApi, SignalRecord } from '@/api/signals';
 import { useTheme } from '@/context/ThemeContext';
 
-type FeedFilter = 'all' | 'executed' | 'skipped';
+type FeedFilter = 'all' | 'parsed' | 'rejected';
 
 const filters: { id: FeedFilter; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { id: 'all', label: 'All activity', icon: 'list-outline' },
-  { id: 'executed', label: 'Executed', icon: 'checkmark-circle-outline' },
-  { id: 'skipped', label: 'Skipped', icon: 'close-circle-outline' },
+  { id: 'parsed', label: 'Executed', icon: 'checkmark-circle-outline' },
+  { id: 'rejected', label: 'Skipped', icon: 'close-circle-outline' },
 ];
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
 export default function Feed() {
   const { colors } = useTheme();
   const [activeFilter, setActiveFilter] = useState<FeedFilter>('all');
+  const [signals, setSignals] = useState<SignalRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const visibleTrades = useMemo(() => {
-    if (activeFilter === 'all') return trades;
-    if (activeFilter === 'executed') return trades.filter((trade) => trade.status === 'Executed');
-    return trades.filter((trade) => trade.status === 'Failed');
-  }, [activeFilter]);
+  useEffect(() => {
+    signalsApi.getSignals({ limit: 50 })
+      .then(setSignals)
+      .catch(() => setError('Failed to load trade feed'))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const visibleSignals = useMemo(() => {
+    if (activeFilter === 'all') return signals;
+    return signals.filter((s) => s.status === activeFilter);
+  }, [activeFilter, signals]);
 
   return (
     <Page>
@@ -31,7 +50,7 @@ export default function Feed() {
       <View style={[s.filterBar, { backgroundColor: colors.elevated, borderColor: colors.border }]}>
         {filters.map((filter) => {
           const selected = filter.id === activeFilter;
-          const selectedColor = filter.id === 'skipped' ? colors.tradeLoss : colors.cyan;
+          const selectedColor = filter.id === 'rejected' ? colors.tradeLoss : colors.cyan;
           return (
             <Pressable
               key={filter.id}
@@ -51,53 +70,99 @@ export default function Feed() {
         })}
       </View>
 
-      <Text style={[s.resultsLabel, { color: colors.muted }]}>
-        {visibleTrades.length} {visibleTrades.length === 1 ? 'trade' : 'trades'}
-      </Text>
-
-      {visibleTrades.length ? (
-        visibleTrades.map((trade) => <TradeCard key={trade.id} trade={trade} />)
-      ) : (
+      {isLoading ? (
+        <ActivityIndicator color={colors.cyan} style={{ marginTop: 40 }} />
+      ) : error ? (
         <View style={[s.empty, { borderColor: colors.border, backgroundColor: colors.elevated }]}>
-          <Ionicons name="checkmark-circle-outline" size={26} color={colors.tradeProfit} />
-          <Text style={[s.emptyTitle, { color: colors.text }]}>No skipped trades</Text>
-          <Text style={[s.emptyCopy, { color: colors.muted }]}>Every signal in this session was processed successfully.</Text>
+          <Ionicons name="cloud-offline-outline" size={26} color={colors.tradeLoss} />
+          <Text style={[s.emptyTitle, { color: colors.text }]}>Could not load feed</Text>
+          <Text style={[s.emptyCopy, { color: colors.muted }]}>{error}</Text>
         </View>
+      ) : (
+        <>
+          <Text style={[s.resultsLabel, { color: colors.muted }]}>
+            {visibleSignals.length} {visibleSignals.length === 1 ? 'signal' : 'signals'}
+          </Text>
+          {visibleSignals.length ? (
+            visibleSignals.map((signal) => <SignalCard key={signal.id} signal={signal} />)
+          ) : (
+            <View style={[s.empty, { borderColor: colors.border, backgroundColor: colors.elevated }]}>
+              <Ionicons name="checkmark-circle-outline" size={26} color={colors.tradeProfit} />
+              <Text style={[s.emptyTitle, { color: colors.text }]}>No signals yet</Text>
+              <Text style={[s.emptyCopy, { color: colors.muted }]}>
+                Connect a Telegram channel to start receiving signals.
+              </Text>
+            </View>
+          )}
+        </>
       )}
     </Page>
   );
 }
 
-function TradeCard({ trade }: { trade: Trade }) {
+function SignalCard({ signal }: { signal: SignalRecord }) {
   const { colors } = useTheme();
-  const isProfit = trade.pnl >= 0;
-  const status = trade.status === 'Failed' ? 'Skipped' : trade.status;
+  const payload = signal.parsed_payload;
+  const action = payload?.action ?? '—';
+  const symbol = payload?.symbol ?? 'Unknown';
+  const isParsed = signal.status === 'parsed';
+  const provider = signal.source?.display_name ?? 'Unknown Source';
 
   return (
     <Card style={[s.card, { backgroundColor: colors.elevated, borderColor: colors.border }]}>
       <View style={s.row}>
         <View style={s.tradeInfo}>
           <View style={s.symbolRow}>
-            <View style={[s.sideTag, { backgroundColor: trade.side === 'BUY' ? colors.successSurface : colors.dangerSurface }]}>
-              <Text style={[s.sideText, { color: trade.side === 'BUY' ? colors.tradeProfit : colors.tradeLoss }]}>
-                {trade.side}
+            <View style={[s.sideTag, { backgroundColor: action === 'BUY' ? colors.successSurface : colors.dangerSurface }]}>
+              <Text style={[s.sideText, { color: action === 'BUY' ? colors.tradeProfit : colors.tradeLoss }]}>
+                {action.toUpperCase()}
               </Text>
             </View>
-            <Text style={[s.symbol, { color: colors.text }]}>{trade.symbol}</Text>
+            <Text style={[s.symbol, { color: colors.text }]}>{symbol}</Text>
           </View>
-          <Text style={[s.meta, { color: colors.muted }]}>From {trade.provider} · {trade.time}</Text>
+          <Text style={[s.meta, { color: colors.muted }]}>From {provider} · {timeAgo(signal.received_at)}</Text>
         </View>
         <View style={s.amountColumn}>
-          <Text style={[s.pnl, { color: isProfit ? colors.tradeProfit : colors.tradeLoss }]}>
-            {isProfit ? '+' : ''}${trade.pnl.toFixed(2)}
+          <View style={[
+            s.statusBadge,
+            { backgroundColor: isParsed ? colors.successSurface : colors.dangerSurface }
+          ]}>
+            <Ionicons
+              name={isParsed ? 'checkmark-circle' : 'close-circle'}
+              size={12}
+              color={isParsed ? colors.tradeProfit : colors.tradeLoss}
+            />
+            <Text style={[s.statusText, { color: isParsed ? colors.tradeProfit : colors.tradeLoss }]}>
+              {isParsed ? 'Parsed' : signal.status === 'rejected' ? 'Rejected' : 'Pending'}
+            </Text>
+          </View>
+          <Text style={[s.confidence, { color: colors.subtle }]}>
+            {Math.round(signal.parse_confidence * 100)}% confidence
           </Text>
-          <Text style={[s.status, { color: isProfit ? colors.tradeProfit : colors.tradeLoss }]}>{status}</Text>
         </View>
       </View>
-      <View style={[s.footer, { borderTopColor: colors.border }]}>
-        <Text style={[s.executionLabel, { color: colors.subtle }]}>EXECUTION PRICE</Text>
-        <Text style={[s.price, { color: colors.text }]}>{trade.price}</Text>
-      </View>
+      {payload && (
+        <View style={[s.footer, { borderTopColor: colors.border }]}>
+          {payload.entry != null && (
+            <View style={s.level}>
+              <Text style={[s.levelLabel, { color: colors.subtle }]}>ENTRY</Text>
+              <Text style={[s.levelValue, { color: colors.text }]}>{payload.entry}</Text>
+            </View>
+          )}
+          {payload.stopLoss != null && (
+            <View style={s.level}>
+              <Text style={[s.levelLabel, { color: colors.subtle }]}>S/L</Text>
+              <Text style={[s.levelValue, { color: colors.tradeLoss }]}>{payload.stopLoss}</Text>
+            </View>
+          )}
+          {payload.takeProfits && payload.takeProfits.length > 0 && (
+            <View style={s.level}>
+              <Text style={[s.levelLabel, { color: colors.subtle }]}>T/P</Text>
+              <Text style={[s.levelValue, { color: colors.tradeProfit }]}>{payload.takeProfits[0]}</Text>
+            </View>
+          )}
+        </View>
+      )}
     </Card>
   );
 }
@@ -115,12 +180,14 @@ const s = StyleSheet.create({
   sideText: { fontFamily: 'Inter_800ExtraBold', fontSize: 9, letterSpacing: 0.4 },
   symbol: { fontFamily: 'Inter_700Bold', fontSize: 16, letterSpacing: -0.2 },
   meta: { fontFamily: 'Inter_500Medium', fontSize: 12, marginTop: 7 },
-  amountColumn: { alignItems: 'flex-end', marginLeft: 12 },
-  pnl: { fontFamily: 'Inter_600SemiBold', fontSize: 16, letterSpacing: -0.2 },
-  status: { fontFamily: 'Inter_700Bold', fontSize: 10, marginTop: 5, letterSpacing: 0.3, textTransform: 'uppercase' },
-  footer: { borderTopWidth: 1, marginTop: 14, paddingTop: 11, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  executionLabel: { fontFamily: 'Inter_700Bold', fontSize: 9, letterSpacing: 0.7 },
-  price: { fontFamily: 'Inter_600SemiBold', fontSize: 13, letterSpacing: 0.1 },
+  amountColumn: { alignItems: 'flex-end', marginLeft: 12, gap: 6 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  statusText: { fontFamily: 'Inter_700Bold', fontSize: 10, letterSpacing: 0.3 },
+  confidence: { fontFamily: 'Inter_400Regular', fontSize: 10 },
+  footer: { borderTopWidth: 1, marginTop: 14, paddingTop: 11, flexDirection: 'row', gap: 20 },
+  level: { gap: 2 },
+  levelLabel: { fontFamily: 'Inter_700Bold', fontSize: 9, letterSpacing: 0.7 },
+  levelValue: { fontFamily: 'Inter_600SemiBold', fontSize: 13, letterSpacing: 0.1 },
   empty: { minHeight: 150, borderWidth: 1, borderRadius: 16, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyTitle: { fontFamily: 'Inter_700Bold', fontSize: 16, marginTop: 10 },
   emptyCopy: { fontFamily: 'Inter_400Regular', fontSize: 12, textAlign: 'center', marginTop: 5, lineHeight: 18 },

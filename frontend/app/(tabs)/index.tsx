@@ -4,16 +4,17 @@ import { useState, useEffect } from 'react';
 import { Image, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { Page, Card } from '@/components/layout';
 import { IconButton, Pill, ScreenTitle } from '@/components/ui';
-import { trades } from '@/data/demo';
 import { useTheme } from '@/context/ThemeContext';
 import { space } from '@/theme';
 import { brokerApi } from '@/api/broker';
+import { signalsApi, SignalRecord } from '@/api/signals';
 
 export default function Dashboard() {
   const { colors, theme, toggleTheme } = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
   const [metrics, setMetrics] = useState<{ balance: number; currency: string; openExposure: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [recentSignals, setRecentSignals] = useState<SignalRecord[]>([]);
 
   const fetchMetrics = async () => {
     try {
@@ -26,10 +27,19 @@ export default function Dashboard() {
     }
   };
 
+  const fetchSignals = async () => {
+    try {
+      const data = await signalsApi.getSignals({ limit: 3 });
+      setRecentSignals(data);
+    } catch (e) {
+      console.warn('Failed to fetch signals', e);
+    }
+  };
+
   useEffect(() => {
     fetchMetrics();
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(fetchMetrics, 10000);
+    fetchSignals();
+    const interval = setInterval(() => { fetchMetrics(); fetchSignals(); }, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -190,52 +200,67 @@ export default function Dashboard() {
       {/* Live Trade Feed */}
       <View style={s.section}>
         <View style={s.sectionHeader}>
-          <Text style={[s.sectionTitle, { color: colors.text }]}>Live trade feed</Text>
+          <Text style={[s.sectionTitle, { color: colors.text }]}>Live signal feed</Text>
           <Pressable onPress={() => router.push('/feed')}>
             <Text style={[s.link, { color: colors.cyan }]}>View all</Text>
           </Pressable>
         </View>
 
-        {trades.slice(0, 2).map((t) => (
-          <View key={t.id} style={[s.trade, { borderBottomColor: colors.card }]}>
-            <View
-              style={[
-                s.side,
-                {
-                  backgroundColor:
-                    t.side === 'BUY' ? colors.successSurface : colors.dangerSurface,
-                },
-              ]}
-            >
-              <Text
-                style={{
-                  color: t.side === 'BUY' ? colors.tradeProfit : colors.tradeLoss,
-                  fontWeight: '800',
-                  fontSize: 11,
-                }}
-              >
-                {t.side}
-              </Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.symbol, { color: colors.text }]}>{t.symbol}</Text>
-              <Text style={[s.tradeMeta, { color: colors.subtle }]}> 
-                From {t.provider} · {t.time}
-              </Text>
-            </View>
-            <View style={{ alignItems: 'flex-end', gap: 4 }}>
-              <Text
-                style={[
-                  s.tradePnl,
-                  { color: t.pnl >= 0 ? colors.tradeProfit : colors.tradeLoss },
-                ]}
-              >
-                {t.pnl >= 0 ? '+' : ''}${t.pnl.toFixed(2)}
-              </Text>
-              <Pill label={t.status} tone={t.pnl >= 0 ? 'green' : 'amber'} />
-            </View>
+        {recentSignals.length === 0 ? (
+          <View style={[s.emptyFeed, { backgroundColor: colors.elevated, borderColor: colors.border }]}>
+            <Ionicons name="radio-outline" size={22} color={colors.subtle} />
+            <Text style={[s.emptyFeedText, { color: colors.muted }]}>
+              No signals yet. Connect a Telegram channel to start.
+            </Text>
           </View>
-        ))}
+        ) : (
+          recentSignals.map((signal) => {
+            const payload = signal.parsed_payload;
+            const action = payload?.action ?? '—';
+            const symbol = payload?.symbol ?? 'Unknown';
+            const provider = signal.source?.display_name ?? 'Unknown';
+            const isParsed = signal.status === 'parsed';
+            const diff = Date.now() - new Date(signal.received_at).getTime();
+            const mins = Math.floor(diff / 60000);
+            const timeStr = mins < 1 ? 'Just now' : mins < 60 ? `${mins}m ago` : `${Math.floor(mins / 60)}h ago`;
+            return (
+              <View key={signal.id} style={[s.trade, { borderBottomColor: colors.card }]}>
+                <View
+                  style={[
+                    s.side,
+                    {
+                      backgroundColor:
+                        action === 'BUY' ? colors.successSurface : colors.dangerSurface,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      color: action === 'BUY' ? colors.tradeProfit : colors.tradeLoss,
+                      fontWeight: '800',
+                      fontSize: 11,
+                    }}
+                  >
+                    {action}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.symbol, { color: colors.text }]}>{symbol}</Text>
+                  <Text style={[s.tradeMeta, { color: colors.subtle }]}>
+                    From {provider} · {timeStr}
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  <View style={[s.statusPill, { backgroundColor: isParsed ? colors.successSurface : colors.dangerSurface }]}>
+                    <Text style={{ color: isParsed ? colors.tradeProfit : colors.tradeLoss, fontFamily: 'Inter_700Bold', fontSize: 10 }}>
+                      {isParsed ? 'Parsed' : 'Rejected'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })
+        )}
       </View>
     </Page>
   );
@@ -544,4 +569,25 @@ const s = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 0.1,
   },
+  emptyFeed: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  emptyFeedText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 18,
+  },
+  statusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
 });
+
