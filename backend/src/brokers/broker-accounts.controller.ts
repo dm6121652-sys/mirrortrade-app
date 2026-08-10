@@ -21,4 +21,9 @@ export class BrokerAccountsController {
   createDemo(@Req() request: AuthenticatedRequest, @Body() input: CreateDemoAccountDto) {
     return this.accounts.createDemoAccount(request.user.id, input);
   }
+
+  @Get('metrics')
+  getMetrics(@Req() request: AuthenticatedRequest) {
+    return this.accounts.getMetrics(request.user.id);
+  }
 }

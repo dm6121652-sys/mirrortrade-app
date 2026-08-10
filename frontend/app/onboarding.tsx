@@ -261,6 +261,15 @@ export default function Onboarding() {
                 </View>
 
                 <View style={[s.inputWrapper, { borderColor: colors.border }]}>
+                  <View style={{ backgroundColor: '#1F06FF10', padding: 12, borderRadius: 8, marginBottom: 8 }}>
+                    <Text style={{ color: '#1F06FF', fontSize: 13, fontFamily: 'Inter_600SemiBold', marginBottom: 4 }}>
+                      ⚠️ Important Step
+                    </Text>
+                    <Text style={{ color: colors.text, fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 18 }}>
+                      You must add <Text style={{ fontFamily: 'Inter_700Bold', color: '#1F06FF' }}>@Ugbedeojosbot</Text> as an Administrator to your Telegram channel or group before connecting, otherwise it cannot read your signals!
+                    </Text>
+                  </View>
+
                   <Text style={[s.inputLabel, { color: colors.muted }]}>Enter channel or group name</Text>
                   <TextInput
                     style={[s.inputField, { color: colors.text, borderColor: colors.border }]}

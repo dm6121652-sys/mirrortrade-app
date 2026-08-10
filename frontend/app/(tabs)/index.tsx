@@ -1,16 +1,37 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState, useEffect } from 'react';
+import { Image, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { Page, Card } from '@/components/layout';
 import { IconButton, Pill, ScreenTitle } from '@/components/ui';
 import { trades } from '@/data/demo';
 import { useTheme } from '@/context/ThemeContext';
 import { space } from '@/theme';
+import { brokerApi } from '@/api/broker';
 
 export default function Dashboard() {
   const { colors, theme, toggleTheme } = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [metrics, setMetrics] = useState<{ balance: number; currency: string; openExposure: number } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchMetrics = async () => {
+    try {
+      const data = await brokerApi.getMetrics();
+      setMetrics(data);
+    } catch (error) {
+      console.warn('Failed to fetch metrics', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMetrics();
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(fetchMetrics, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <Page>
@@ -74,7 +95,13 @@ export default function Dashboard() {
           </View>
         </View>
 
-        <Text style={[s.money, { color: colors.text }]}>$12,450.80</Text>
+        {isLoading ? (
+          <ActivityIndicator color={colors.cyan} style={{ alignSelf: 'flex-start', marginTop: 16, marginBottom: 8 }} />
+        ) : (
+          <Text style={[s.money, { color: colors.text }]}>
+            {metrics?.currency === 'USD' ? '$' : metrics?.currency || '$'}{metrics?.balance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+          </Text>
+        )}
 
         <View style={[s.performanceRow, { backgroundColor: colors.successSurface }]}>
           <View style={s.performanceIcon}>
@@ -90,12 +117,16 @@ export default function Dashboard() {
         <View style={[s.metricsRow, { borderColor: colors.border }]}>
           <View style={s.metric}>
             <Text style={[s.metricLabel, { color: colors.subtle }]}>Available to trade</Text>
-            <Text style={[s.metricValue, { color: colors.text }]}>$8,240.00</Text>
+            <Text style={[s.metricValue, { color: colors.text }]}>
+              ${isLoading ? '...' : (metrics ? Math.max(0, metrics.balance - metrics.openExposure).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00')}
+            </Text>
           </View>
           <View style={[s.metricDivider, { backgroundColor: colors.border }]} />
           <View style={s.metric}>
             <Text style={[s.metricLabel, { color: colors.subtle }]}>Open exposure</Text>
-            <Text style={[s.metricValue, { color: colors.text }]}>$2,980.40</Text>
+            <Text style={[s.metricValue, { color: colors.text }]}>
+              ${isLoading ? '...' : (metrics?.openExposure?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00')}
+            </Text>
           </View>
         </View>
 

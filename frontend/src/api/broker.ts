@@ -14,4 +14,9 @@ export const brokerApi = {
     const response = await apiClient.get('/broker-accounts');
     return response.data;
   },
+
+  getMetrics: async () => {
+    const response = await apiClient.get('/broker-accounts/metrics');
+    return response.data;
+  },
 };

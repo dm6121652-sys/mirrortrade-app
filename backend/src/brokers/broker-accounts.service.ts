@@ -4,12 +4,14 @@ import { Repository } from 'typeorm';
 import { CredentialEncryptionService } from '../security/credential-encryption.service';
 import { BrokerAccount } from './broker-account.entity';
 import { CreateDemoAccountDto } from './dto/create-demo-account.dto';
+import { DerivService } from './deriv.service';
 
 @Injectable()
 export class BrokerAccountsService {
   constructor(
     @InjectRepository(BrokerAccount) private readonly accounts: Repository<BrokerAccount>,
     private readonly encryption: CredentialEncryptionService,
+    private readonly derivService: DerivService,
   ) {}
 
   async createDemoAccount(userId: string, input: CreateDemoAccountDto): Promise<BrokerAccount> {
@@ -38,5 +40,19 @@ export class BrokerAccountsService {
       select: ['id', 'broker', 'accountReference', 'isDemo', 'status', 'createdAt', 'updatedAt'],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async getMetrics(userId: string) {
+    const account = await this.accounts.findOne({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+    
+    if (!account) {
+      throw new Error('No broker account found.');
+    }
+
+    const token = this.encryption.decrypt(account.credentialsCiphertext);
+    return this.derivService.getMetrics(token);
   }
 }
