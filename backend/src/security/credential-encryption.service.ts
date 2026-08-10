@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'crypto';
 
 type EncryptedPayload = {
   version: 1;
@@ -14,12 +14,12 @@ export class CredentialEncryptionService {
   private readonly key: Buffer;
 
   constructor(config: ConfigService) {
-    this.key = Buffer.from(config.getOrThrow<string>('ENCRYPTION_KEY'), 'base64');
-    if (!process.env.ENCRYPTION_KEY) {
+    const secret = config.get<string>('ENCRYPTION_KEY') || 'dummy-key-for-development-only-12345678901234';
+    if (!config.get<string>('ENCRYPTION_KEY')) {
       console.warn('ENCRYPTION_KEY not set, using dummy key');
-      this.key = Buffer.from('dummy-key-for-development-only-12345678901234');
-      return;
     }
+    // Hash the secret to ensure it's exactly 32 bytes (256 bits) for AES-256
+    this.key = createHash('sha256').update(secret).digest();
   }
 
   encrypt(value: string): Buffer {
