@@ -2,10 +2,20 @@
   "expo": {
     "name": "MirrorTrade",
     "slug": "mirrortrade",
+    "backgroundColor": "#FFFFFF",
     "scheme": "mirrortrade",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
+    "androidStatusBar": {
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content",
+      "translucent": false
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content"
+    },
     "plugins": ["expo-router"],
     "experiments": { "typedRoutes": true }
   }

@@ -9,10 +9,10 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const BRAND_BLUE = '#1F06FF';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function Welcome() {
+  const { colors, theme } = useTheme();
   const logoScale = useRef(new Animated.Value(0.75)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const ctaTranslate = useRef(new Animated.Value(36)).current;
@@ -32,7 +32,7 @@ export default function Welcome() {
   }, []);
 
   return (
-    <View style={s.root}>
+    <View style={[s.root, { backgroundColor: colors.base }]}>
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
 
         {/* ── Hero ─────────────────────────────────────────────── */}
@@ -41,7 +41,11 @@ export default function Welcome() {
           {/* Logo image */}
           <Animated.View style={{ opacity: logoOpacity, transform: [{ scale: logoScale }] }}>
             <Image
-              source={require('../assets/images/ChatGPT Image Aug 8, 2026, 05_49_47 PM.png')}
+              source={
+                theme === 'light'
+                  ? require('../assets/images/welcome-logo-light.png')
+                  : require('../assets/images/ChatGPT Image Aug 8, 2026, 05_49_47 PM.png')
+              }
               style={s.logo}
               resizeMode="contain"
             />
@@ -55,19 +59,27 @@ export default function Welcome() {
         >
           <Pressable
             onPress={() => router.push('/auth')}
-            style={({ pressed }) => [s.primaryBtn, pressed && { opacity: 0.87, transform: [{ scale: 0.98 }] }]}
+            style={({ pressed }) => [
+              s.primaryBtn,
+              { backgroundColor: colors.cyan },
+              pressed && { opacity: 0.87, transform: [{ scale: 0.98 }] }
+            ]}
           >
-            <Text style={s.primaryText}>Get started</Text>
+            <Text style={[s.primaryText, { color: colors.base }]}>Get started</Text>
           </Pressable>
 
           <Pressable
             onPress={() => router.push('/auth')}
-            style={({ pressed }) => [s.secondaryBtn, pressed && { opacity: 0.65 }]}
+            style={({ pressed }) => [
+              s.secondaryBtn,
+              { borderColor: colors.border, backgroundColor: colors.elevated },
+              pressed && { opacity: 0.65 }
+            ]}
           >
-            <Text style={s.secondaryText}>Sign in to existing account</Text>
+            <Text style={[s.secondaryText, { color: colors.subtle }]}>Sign in to existing account</Text>
           </Pressable>
 
-          <Text style={s.disclaimer}>
+          <Text style={[s.disclaimer, { color: colors.muted }]}>
             Trading involves risk. Past performance does not guarantee future results.
           </Text>
         </Animated.View>
@@ -80,7 +92,6 @@ export default function Welcome() {
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#000',
   },
   safe: {
     flex: 1,
@@ -109,12 +120,10 @@ const s = StyleSheet.create({
   primaryBtn: {
     height: 56,
     borderRadius: 14,
-    backgroundColor: BRAND_BLUE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.2,
@@ -123,18 +132,14 @@ const s = StyleSheet.create({
     height: 52,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.13)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.03)',
   },
   secondaryText: {
-    color: 'rgba(255,255,255,0.6)',
     fontSize: 15,
     fontWeight: '600',
   },
   disclaimer: {
-    color: 'rgba(255,255,255,0.22)',
     fontSize: 11,
     textAlign: 'center',
     lineHeight: 16,

@@ -14,12 +14,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const BRAND_BLUE = '#1F06FF';
+import { useTheme } from '@/context/ThemeContext';
 
 type Tab = 'signin' | 'signup';
 
 export default function Auth() {
+  const { colors, theme } = useTheme();
   const [tab, setTab] = useState<Tab>('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -47,7 +47,7 @@ export default function Auth() {
   });
 
   return (
-    <View style={s.root}>
+    <View style={[s.root, { backgroundColor: colors.base }]}>
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
@@ -61,11 +61,18 @@ export default function Auth() {
 
             {/* ── Header ─────────────────────────────────────── */}
             <View style={s.header}>
-              <Pressable onPress={() => router.back()} style={s.backBtn}>
-                <Ionicons name="arrow-back" size={19} color="rgba(255,255,255,0.6)" />
+              <Pressable
+                onPress={() => router.back()}
+                style={[s.backBtn, { borderColor: colors.border, backgroundColor: colors.elevated }]}
+              >
+                <Ionicons name="arrow-back" size={19} color={colors.subtle} />
               </Pressable>
               <Image
-                source={require('../assets/images/logo-mark.png')}
+                source={
+                  theme === 'light'
+                    ? require('../assets/images/logo-mark-light.png')
+                    : require('../assets/images/logo-mark.png')
+                }
                 style={s.logoSmall}
                 resizeMode="contain"
               />
@@ -73,10 +80,10 @@ export default function Auth() {
 
             {/* ── Title ──────────────────────────────────────── */}
             <View style={s.titleBlock}>
-              <Text style={s.heading}>
+              <Text style={[s.heading, { color: colors.text }]}>
                 {tab === 'signin' ? 'Welcome back.' : 'Create account.'}
               </Text>
-              <Text style={s.subheading}>
+              <Text style={[s.subheading, { color: colors.muted }]}>
                 {tab === 'signin'
                   ? 'Sign in to continue to Trallo'
                   : 'Start copying elite traders today'}
@@ -84,15 +91,15 @@ export default function Auth() {
             </View>
 
             {/* ── Tab switcher ───────────────────────────────── */}
-            <View style={s.tabBar}>
-              <Animated.View style={[s.tabIndicator, { left: tabIndicatorLeft }]} />
+            <View style={[s.tabBar, { backgroundColor: colors.elevated, borderColor: colors.border }]}>
+              <Animated.View style={[s.tabIndicator, { left: tabIndicatorLeft, borderColor: colors.cyan }]} />
               <Pressable style={s.tabBtn} onPress={() => switchTab('signin')}>
-                <Text style={[s.tabText, tab === 'signin' && s.tabTextActive]}>
+                <Text style={[s.tabText, { color: colors.disabled }, tab === 'signin' && { color: colors.text }]}>
                   Sign in
                 </Text>
               </Pressable>
               <Pressable style={s.tabBtn} onPress={() => switchTab('signup')}>
-                <Text style={[s.tabText, tab === 'signup' && s.tabTextActive]}>
+                <Text style={[s.tabText, { color: colors.disabled }, tab === 'signup' && { color: colors.text }]}>
                   Sign up
                 </Text>
               </Pressable>
@@ -144,29 +151,36 @@ export default function Auth() {
 
               {tab === 'signin' && (
                 <Pressable style={s.forgot}>
-                  <Text style={s.forgotText}>Forgot password?</Text>
+                  <Text style={[s.forgotText, { color: colors.cyan }]}>Forgot password?</Text>
                 </Pressable>
               )}
 
               {/* Submit */}
               <Pressable
-                onPress={() => router.replace('/(tabs)')}
+                onPress={() => {
+                  if (tab === 'signup') {
+                    router.replace('/onboarding');
+                  } else {
+                    router.replace('/(tabs)');
+                  }
+                }}
                 style={({ pressed }) => [
                   s.submitBtn,
+                  { backgroundColor: colors.cyan },
                   pressed && { opacity: 0.87, transform: [{ scale: 0.98 }] },
                 ]}
               >
-                <Text style={s.submitText}>
+                <Text style={[s.submitText, { color: colors.base }]}>
                   {tab === 'signin' ? 'Sign in' : 'Create account'}
                 </Text>
-                <Ionicons name="arrow-forward" size={17} color="#fff" />
+                <Ionicons name="arrow-forward" size={17} color={colors.base} />
               </Pressable>
 
               {/* Divider */}
               <View style={s.divider}>
-                <View style={s.divLine} />
-                <Text style={s.divText}>or</Text>
-                <View style={s.divLine} />
+                <View style={[s.divLine, { backgroundColor: colors.border }]} />
+                <Text style={[s.divText, { color: colors.disabled }]}>or</Text>
+                <View style={[s.divLine, { backgroundColor: colors.border }]} />
               </View>
 
               {/* Social buttons */}
@@ -176,19 +190,19 @@ export default function Auth() {
               </View>
 
               {tab === 'signup' && (
-                <Text style={s.terms}>
+                <Text style={[s.terms, { color: colors.muted }]}>
                   By creating an account you agree to our{' '}
-                  <Text style={s.termsLink}>Terms of Service</Text>
+                  <Text style={[s.termsLink, { color: colors.cyan }]}>Terms of Service</Text>
                   {' '}and{' '}
-                  <Text style={s.termsLink}>Privacy Policy</Text>.
+                  <Text style={[s.termsLink, { color: colors.cyan }]}>Privacy Policy</Text>.
                 </Text>
               )}
             </View>
 
             {/* ── Deriv notice ───────────────────────────────── */}
-            <View style={s.notice}>
-              <Ionicons name="shield-checkmark-outline" size={14} color={BRAND_BLUE} />
-              <Text style={s.noticeText}>
+            <View style={[s.notice, { backgroundColor: colors.successSurface, borderColor: colors.border }]}>
+              <Ionicons name="shield-checkmark-outline" size={14} color={colors.cyan} />
+              <Text style={[s.noticeText, { color: colors.subtle }]}>
                 Trallo never holds your funds. All trading happens in your own broker account.
               </Text>
             </View>
@@ -225,24 +239,31 @@ function Field({
   keyboardType?: 'email-address' | 'default';
   autoCapitalize?: 'none' | 'words' | 'sentences';
 }) {
+  const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
 
   return (
     <View style={s.fieldWrap}>
-      <Text style={s.fieldLabel}>{label}</Text>
-      <View style={[s.fieldBox, focused && s.fieldBoxFocused]}>
+      <Text style={[s.fieldLabel, { color: colors.muted }]}>{label}</Text>
+      <View
+        style={[
+          s.fieldBox,
+          { borderColor: colors.border },
+          focused && { borderColor: colors.cyan }
+        ]}
+      >
         <Ionicons
           name={icon}
           size={16}
-          color={focused ? BRAND_BLUE : 'rgba(255,255,255,0.25)'}
+          color={focused ? colors.cyan : colors.disabled}
           style={s.fieldIcon}
         />
         <TextInput
-          style={s.input}
+          style={[s.input, { color: colors.text }]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="rgba(255,255,255,0.18)"
+          placeholderTextColor={colors.disabled}
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType ?? 'default'}
           autoCapitalize={autoCapitalize ?? 'sentences'}
@@ -251,7 +272,7 @@ function Field({
         />
         {rightIcon && (
           <Pressable onPress={onRightPress} hitSlop={10}>
-            <Ionicons name={rightIcon} size={17} color="rgba(255,255,255,0.3)" />
+            <Ionicons name={rightIcon} size={17} color={colors.disabled} />
           </Pressable>
         )}
       </View>
@@ -262,10 +283,17 @@ function Field({
 // ─── Social button ────────────────────────────────────────────────────────────
 
 function SocialBtn({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
+  const { colors } = useTheme();
   return (
-    <Pressable style={({ pressed }) => [s.socialBtn, pressed && { opacity: 0.65 }]}>
-      <Ionicons name={icon} size={18} color="rgba(255,255,255,0.7)" />
-      <Text style={s.socialText}>{label}</Text>
+    <Pressable
+      style={({ pressed }) => [
+        s.socialBtn,
+        { backgroundColor: colors.elevated, borderColor: colors.border },
+        pressed && { opacity: 0.65 }
+      ]}
+    >
+      <Ionicons name={icon} size={18} color={colors.subtle} />
+      <Text style={[s.socialText, { color: colors.subtle }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -273,7 +301,7 @@ function SocialBtn({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; labe
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
+  root: { flex: 1 },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40 },
 
@@ -290,10 +318,8 @@ const s = StyleSheet.create({
     height: 40,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.03)',
   },
   logoSmall: {
     width: 44,
@@ -303,27 +329,23 @@ const s = StyleSheet.create({
   // Title
   titleBlock: { marginBottom: 28 },
   heading: {
-    color: '#FFFFFF',
+    fontFamily: 'Inter_800ExtraBold',
     fontSize: 32,
-    fontWeight: '800',
     letterSpacing: -1.2,
     lineHeight: 38,
   },
   subheading: {
-    color: 'rgba(255,255,255,0.38)',
+    fontFamily: 'Inter_400Regular',
     fontSize: 14,
     marginTop: 8,
     lineHeight: 20,
-    fontWeight: '400',
   },
 
   // Tab bar
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
     padding: 4,
     marginBottom: 28,
     position: 'relative',
@@ -334,10 +356,9 @@ const s = StyleSheet.create({
     top: 4,
     bottom: 4,
     width: '48%',
-    backgroundColor: 'rgba(31,6,255,0.25)',
+    backgroundColor: 'transparent',
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: 'rgba(31,6,255,0.4)',
   },
   tabBtn: {
     flex: 1,
@@ -345,22 +366,18 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   tabText: {
-    color: 'rgba(255,255,255,0.3)',
-    fontWeight: '700',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-  },
-  tabTextActive: {
-    color: '#FFFFFF',
+    letterSpacing: 0.1,
   },
 
   // Form
   form: { gap: 0 },
   fieldWrap: { marginBottom: 16 },
   fieldLabel: {
-    color: 'rgba(255,255,255,0.45)',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.6,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
@@ -370,20 +387,15 @@ const s = StyleSheet.create({
     backgroundColor: 'transparent',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.09)',
     paddingHorizontal: 14,
     height: 52,
   },
-  fieldBoxFocused: {
-    borderColor: BRAND_BLUE,
-    backgroundColor: 'transparent',
-  },
   fieldIcon: { marginRight: 10 },
   input: {
+    fontFamily: 'Inter_400Regular',
     flex: 1,
-    color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '500',
+    backgroundColor: 'transparent',
   },
 
   forgot: {
@@ -392,16 +404,14 @@ const s = StyleSheet.create({
     marginTop: -4,
   },
   forgotText: {
-    color: BRAND_BLUE,
+    fontFamily: 'Inter_500Medium',
     fontSize: 13,
-    fontWeight: '600',
   },
 
   // Submit
   submitBtn: {
     height: 56,
     borderRadius: 14,
-    backgroundColor: BRAND_BLUE,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -409,9 +419,9 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   submitText: {
-    color: '#fff',
+    fontFamily: 'Inter_700Bold',
     fontSize: 16,
-    fontWeight: '800',
+    letterSpacing: 0.1,
   },
 
   // Divider
@@ -424,12 +434,10 @@ const s = StyleSheet.create({
   divLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   divText: {
-    color: 'rgba(255,255,255,0.25)',
+    fontFamily: 'Inter_500Medium',
     fontSize: 12,
-    fontWeight: '600',
   },
 
   // Social
@@ -442,25 +450,24 @@ const s = StyleSheet.create({
     gap: 8,
     height: 50,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.09)',
   },
   socialText: {
-    color: 'rgba(255,255,255,0.65)',
+    fontFamily: 'Inter_500Medium',
     fontSize: 14,
-    fontWeight: '600',
+    letterSpacing: 0.1,
+  },
+  termsLink: {
+    fontFamily: 'Inter_600SemiBold',
   },
 
   // Terms
   terms: {
-    color: 'rgba(255,255,255,0.28)',
     fontSize: 11,
     textAlign: 'center',
     lineHeight: 17,
     marginTop: 16,
   },
-  termsLink: { color: BRAND_BLUE },
 
   // Notice
   notice: {
@@ -468,14 +475,11 @@ const s = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 8,
     marginTop: 28,
-    backgroundColor: 'rgba(31,6,255,0.05)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(31,6,255,0.15)',
     padding: 12,
   },
   noticeText: {
-    color: 'rgba(255,255,255,0.35)',
     fontSize: 12,
     lineHeight: 17,
     flex: 1,

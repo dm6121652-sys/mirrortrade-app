@@ -1,2 +1,23 @@
-import { Ionicons } from '@expo/vector-icons'; import { StyleSheet, Text, View } from 'react-native'; import { Page, Card } from '@/components/layout'; import { ScreenTitle } from '@/components/ui'; import { colors } from '@/theme';
-export default function History(){return <Page><ScreenTitle eyebrow="Account activity" title="History" action={<Ionicons name="funnel-outline" color={colors.text} size={23}/>}/><Card><Text style={s.label}>TOTAL DEMO P&L</Text><Text style={s.total}>+$1,240.50</Text><Text style={s.copy}>Across 38 completed trades this month</Text></Card><View style={s.empty}><View style={s.icon}><Ionicons name="receipt-outline" color={colors.cyan} size={28}/></View><Text style={s.title}>Your full history is ready</Text><Text style={s.text}>Trades will appear here with filters and export options once the backend is connected.</Text></View></Page>}; const s=StyleSheet.create({label:{color:colors.subtle,fontSize:10,fontWeight:'800',letterSpacing:1},total:{color:colors.profit,fontFamily:'monospace',fontSize:30,fontWeight:'800',marginTop:8},copy:{color:colors.muted,fontSize:12,marginTop:5},empty:{alignItems:'center',paddingTop:72,paddingHorizontal:28},icon:{width:62,height:62,borderRadius:21,backgroundColor:'#00D4AA18',justifyContent:'center',alignItems:'center'},title:{color:colors.text,fontSize:18,fontWeight:'800',marginTop:18},text:{color:colors.muted,textAlign:'center',lineHeight:19,fontSize:13,marginTop:7}});
+import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, View } from 'react-native';
+import { Card, Page } from '@/components/layout';
+import { ScreenTitle, ThemeToggle } from '@/components/ui';
+import { useTheme } from '@/context/ThemeContext';
+
+export default function History() {
+  const { colors } = useTheme();
+  return <Page>
+    <ScreenTitle eyebrow="Account activity" title="History" action={<ThemeToggle />} />
+    <Card>
+      <Text style={[s.label, { color: colors.subtle }]}>TOTAL DEMO P&amp;L</Text>
+      <Text style={[s.total, { color: colors.tradeProfit }]}>+$1,240.50</Text>
+      <Text style={[s.copy, { color: colors.muted }]}>Across 38 completed trades this month</Text>
+    </Card>
+    <View style={s.empty}>
+      <View style={[s.icon, { backgroundColor: colors.successSurface }]}><Ionicons name="receipt-outline" color={colors.cyan} size={28} /></View>
+      <Text style={[s.title, { color: colors.text }]}>Your full history is ready</Text>
+      <Text style={[s.text, { color: colors.muted }]}>Trades will appear here with filters and export options once the backend is connected.</Text>
+    </View>
+  </Page>;
+}
+const s = StyleSheet.create({ label:{fontFamily:'Inter_700Bold',fontSize:10,letterSpacing:1},total:{fontFamily:'Inter_700Bold',fontSize:30,letterSpacing:-.8,marginTop:8},copy:{fontFamily:'Inter_400Regular',fontSize:12,marginTop:5},empty:{alignItems:'center',paddingTop:72,paddingHorizontal:28},icon:{width:62,height:62,borderRadius:21,justifyContent:'center',alignItems:'center'},title:{fontFamily:'Inter_700Bold',fontSize:18,marginTop:18},text:{fontFamily:'Inter_400Regular',textAlign:'center',lineHeight:19,fontSize:13,marginTop:7} });
