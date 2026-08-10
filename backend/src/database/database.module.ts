@@ -20,7 +20,7 @@ import { SignalSource } from '../signals/signal-source.entity';
             type: 'postgres',
             url: databaseUrl,
             entities: [User, BrokerAccount, TradingProfile, Signal, SignalSource],
-            synchronize: false,
+            synchronize: true, // ← Enabled so Railway creates your tables automatically
             logging: config.get<string>('NODE_ENV') !== 'production',
             ssl: { rejectUnauthorized: false },
           };

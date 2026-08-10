@@ -719,6 +719,71 @@ const s = StyleSheet.create({
     lineHeight: 18,
   },
 
+  // Broker connection
+  brokerCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    gap: 14,
+  },
+  brokerCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  derivMark: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  derivMarkText: {
+    fontFamily: 'Inter_800ExtraBold',
+    fontSize: 21,
+    letterSpacing: -0.8,
+  },
+  brokerName: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 16,
+    letterSpacing: -0.2,
+  },
+  brokerMeta: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    marginTop: 3,
+  },
+  recommendedBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  recommendedText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 9,
+    letterSpacing: 0.6,
+  },
+  brokerHint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  brokerHintText: {
+    flex: 1,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  laterLink: {
+    alignSelf: 'center',
+    paddingVertical: 4,
+  },
+  laterLinkText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
+
   // Verification Screen
   verifyBox: {
     borderRadius: 20,
