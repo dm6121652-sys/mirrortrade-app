@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsNumber, IsString, validateSync } from 'class-validator';
+import { IsEnum, IsOptional, IsString, validateSync } from 'class-validator';
 
 enum Environment {
   Development = 'development',
@@ -9,45 +9,52 @@ enum Environment {
 
 export class EnvironmentVariables {
   @IsEnum(Environment)
-  NODE_ENV = Environment.Production;
+  NODE_ENV?: Environment = Environment.Production;
 
+  @IsOptional()
   @IsString()
-  APP_NAME: string;
+  APP_NAME?: string;
 
-  @IsNumber()
-  APP_PORT: number = 3000;
-
-  // Database
+  @IsOptional()
   @IsString()
-  DB_HOST: string;
+  APP_PORT?: string;
 
-  @IsNumber()
-  DB_PORT: number = 5432;
-
+  @IsOptional()
   @IsString()
-  DB_USERNAME: string;
+  DB_HOST?: string;
 
+  @IsOptional()
   @IsString()
-  DB_PASSWORD: string;
+  DB_PORT?: string;
 
+  @IsOptional()
   @IsString()
-  DB_NAME: string;
+  DB_USERNAME?: string;
 
-  // JWT
+  @IsOptional()
   @IsString()
-  JWT_SECRET: string;
+  DB_PASSWORD?: string;
 
-  // Telegram (optional)
+  @IsOptional()
+  @IsString()
+  DB_NAME?: string;
+
+  @IsOptional()
+  @IsString()
+  JWT_SECRET?: string;
+
+  @IsOptional()
   @IsString()
   TELEGRAM_BOT_TOKEN?: string;
 
+  @IsOptional()
   @IsString()
   TELEGRAM_BOT_WEBHOOK_URL?: string;
 }
 
 export function validateEnvironment(config: Record<string, unknown>) {
   const validatedConfig = plainToInstance(EnvironmentVariables, config, {
-    enableImplicitConversion: true, // THIS CONVERTS STRINGS TO NUMBERS!
+    enableImplicitConversion: true,
   });
 
   const errors = validateSync(validatedConfig, {
@@ -55,6 +62,7 @@ export function validateEnvironment(config: Record<string, unknown>) {
   });
 
   if (errors.length > 0) {
+    console.error('Environment validation errors:', errors);
     throw new Error(errors.toString());
   }
 
