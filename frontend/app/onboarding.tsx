@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { onboardingApi } from '@/api/onboarding';
 import { brokerApi } from '@/api/broker';
 import { signalsApi } from '@/api/signals';
+import { telegramApi, TelegramChannelInfo } from '@/api/telegram';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -24,7 +25,7 @@ export default function Onboarding() {
   const { colors, theme, toggleTheme } = useTheme();
 
   // Onboarding states
-  const [step, setStep] = useState(0); // 0: Goal, 1: Broker, 2-4: Signals, 5: Risk Shield
+  const [step, setStep] = useState(0); // 0: Goal, 1: Broker, 2: Connect Telegram, 3: Connected Success, 4: Risk Shield
   const [goal, setGoal] = useState<Goal>('growth');
   const [channelInput, setChannelInput] = useState('');
   const [isMember, setIsMember] = useState(false);
@@ -38,8 +39,9 @@ export default function Onboarding() {
   const [brokerError, setBrokerError] = useState('');
   const [isChannelConnecting, setIsChannelConnecting] = useState(false);
   const [channelError, setChannelError] = useState('');
+  const [channelDetails, setChannelDetails] = useState<TelegramChannelInfo | null>(null);
 
-  const activeChannelName = channelInput.trim() || 'Habbyforex Signals';
+  const activeChannelName = channelDetails?.title || channelInput.trim() || 'Habbyforex Signals';
 
   const handleNextStep = () => {
     setStep((prev) => prev + 1);
@@ -52,7 +54,7 @@ export default function Onboarding() {
   const handleConnectChannel = () => {
     if (!isMember) return;
     setConnectedChannels((prev) => [...prev, activeChannelName]);
-    setStep(4); // Go to Connected screen
+    setStep(3); // Go to Connected screen
   };
 
   const handleAddMore = () => {
@@ -72,7 +74,7 @@ export default function Onboarding() {
           <View style={s.header}>
             <View style={s.headerRow}>
               <Text style={[s.stepIndicator, { color: colors.muted }]}>
-                Step {step === 5 ? 4 : step >= 3 ? 3 : step + 1} of 4
+                Step {step === 4 ? 4 : step + 1} of 4
               </Text>
               <Pressable
                 onPress={toggleTheme}
@@ -94,7 +96,7 @@ export default function Onboarding() {
                   s.progressFill,
                   {
                     backgroundColor: colors.cyan,
-                    width: `${((step === 5 ? 4 : step >= 3 ? 3 : step + 1) / 4) * 100}%`,
+                    width: `${((step === 4 ? 4 : step + 1) / 4) * 100}%`,
                   },
                 ]}
               />
@@ -245,221 +247,11 @@ export default function Onboarding() {
                 {brokerError !== '' && (
                   <Text style={{ color: colors.tradeLoss, fontFamily: 'Inter_500Medium', fontSize: 13, marginTop: 8 }}>{brokerError}</Text>
                 )}
-                <Pressable onPress={handleNextStep} style={s.laterLink}><Text style={[s.laterLinkText, { color: colors.subtle }]}>I’ll connect my broker later</Text></Pressable>
               </View>
             )}
 
+            {/* ── STEP 2: CONNECTED SUCCESS ──────────────────── */}
             {step === 2 && (
-              <View style={s.container}>
-                <View style={s.iconTitleContainer}>
-                  <Text style={[s.headingLarge, { color: colors.text }]}>
-                    🎯 Connect Trading Signals
-                  </Text>
-                  <Text style={[s.subheading, { color: colors.muted }]}>
-                    Get signals from Telegram channels and execute trades automatically.
-                  </Text>
-                </View>
-
-                <View style={[s.inputWrapper, { borderColor: colors.border }]}>
-                  <View style={{ backgroundColor: '#1F06FF10', padding: 12, borderRadius: 8, marginBottom: 8 }}>
-                    <Text style={{ color: '#1F06FF', fontSize: 13, fontFamily: 'Inter_600SemiBold', marginBottom: 4 }}>
-                      ⚠️ Important Step
-                    </Text>
-                    <Text style={{ color: colors.text, fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 18 }}>
-                      You must add <Text style={{ fontFamily: 'Inter_700Bold', color: '#1F06FF' }}>@Ugbedeojosbot</Text> as an Administrator to your Telegram channel or group before connecting, otherwise it cannot read your signals!
-                    </Text>
-                  </View>
-
-                  <Text style={[s.inputLabel, { color: colors.muted }]}>Enter channel or group name</Text>
-                  <TextInput
-                    style={[s.inputField, { color: colors.text, borderColor: colors.border }]}
-                    value={channelInput}
-                    onChangeText={setChannelInput}
-                    placeholder="@habbyforex_signals"
-                    placeholderTextColor={colors.disabled}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <Text style={[s.helperHint, { color: colors.muted }]}>
-                    or: forex-signals-group{'\n'}or: -1001234567890 (group ID)
-                  </Text>
-
-                  <View style={[s.infoBox, { backgroundColor: colors.elevated, borderColor: colors.border }]}>
-                    <Text style={[s.infoBoxTitle, { color: colors.text }]}>ℹ️ How to find your group ID:</Text>
-                    <Text style={[s.infoBoxBody, { color: colors.muted }]}>
-                      • Go to Telegram{'\n'}
-                      • Open the channel/group{'\n'}
-                      • Right-click → Copy Group Link{'\n'}
-                      • Find number after "c/"
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={s.btnRow}>
-                  <Pressable
-                    onPress={() => setStep(5)} // Skip to Risk Shield
-                    style={({ pressed }) => [
-                      s.secondaryBtn,
-                      { borderColor: colors.border },
-                      pressed && { opacity: 0.7 },
-                    ]}
-                  >
-                    <Text style={[s.secondaryBtnText, { color: colors.subtle }]}>Skip for Now</Text>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={handleNextStep}
-                    disabled={!channelInput.trim()}
-                    style={({ pressed }) => [
-                      s.primaryBtn,
-                      { backgroundColor: colors.cyan, flex: 1.3 },
-                      (!channelInput.trim() || pressed) && { opacity: 0.7 },
-                    ]}
-                  >
-                    <Text style={[s.primaryBtnText, { color: colors.base }]}>Continue</Text>
-                  </Pressable>
-                </View>
-              </View>
-            )}
-
-            {/* ── STEP 2: VERIFY CHANNEL ──────────────────────── */}
-            {step === 3 && (
-              <View style={s.container}>
-                <View style={s.iconTitleContainer}>
-                  <View style={[s.stepIconBox, { backgroundColor: colors.successSurface, borderRadius: 12 }]}>
-                    <Ionicons name="checkmark-circle-outline" size={24} color={colors.tradeProfit} />
-                  </View>
-                  <Text style={[s.heading, { color: colors.text, marginTop: 4 }]}>
-                    Channel Found!
-                  </Text>
-                  <Text style={[s.subheading, { color: colors.muted }]}>
-                    We successfully located the Telegram source. Verify it matches below.
-                  </Text>
-                </View>
-
-                {/* Premium Channel Identity Card */}
-                <View style={[s.verifyBox, { backgroundColor: colors.elevated, borderColor: colors.border }]}>
-                  
-                  <View style={s.channelHeader}>
-                    {/* Circular Letter Avatar */}
-                    <View style={[s.avatarCircle, { backgroundColor: colors.card }]}>
-                      <Text style={[s.avatarLetter, { color: colors.text }]}>
-                        {activeChannelName.replace(/[@_-]/g, '').slice(0, 1).toUpperCase() || 'T'}
-                      </Text>
-                      <View style={[s.avatarBadge, { backgroundColor: colors.cyan }]}>
-                        <Ionicons name="paper-plane-outline" size={10} color="#FFFFFF" />
-                      </View>
-                    </View>
-                    
-                    <View style={s.channelHeaderInfo}>
-                      <Text style={[s.channelNameLarge, { color: colors.text }]} numberOfLines={1}>
-                        {activeChannelName}
-                      </Text>
-                      <View style={s.pillRow}>
-                        <View style={[s.verifiedPill, { backgroundColor: 'rgba(31,6,255,0.1)' }]}>
-                          <Ionicons name="shield-checkmark" size={10} color={colors.cyan} />
-                          <Text style={[s.verifiedPillText, { color: colors.cyan }]}>Verified Signal Source</Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* Horizontal Metrics Grid */}
-                  <View style={[s.verifyMetricsRow, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
-                    <View style={s.verifyMetric}>
-                      <Text style={[s.verifyMetricVal, { color: colors.text }]}>~500</Text>
-                      <Text style={[s.verifyMetricLbl, { color: colors.muted }]}>MEMBERS</Text>
-                    </View>
-                    <View style={[s.verifyMetricDivider, { backgroundColor: colors.border }]} />
-                    <View style={s.verifyMetric}>
-                      <Text style={[s.verifyMetricVal, { color: colors.text }]}>Public</Text>
-                      <Text style={[s.verifyMetricLbl, { color: colors.muted }]}>CHANNEL TYPE</Text>
-                    </View>
-                  </View>
-
-                  {/* Premium Glow Checkbox Card */}
-                  <Pressable
-                    style={[
-                      s.checkboxCard,
-                      { backgroundColor: colors.card, borderColor: colors.border },
-                      isMember && { borderColor: colors.cyan }
-                    ]}
-                    onPress={() => setIsMember(!isMember)}
-                  >
-                    <View
-                      style={[
-                        s.checkboxSquare,
-                        { borderColor: colors.border },
-                        isMember && { backgroundColor: colors.cyan, borderColor: colors.cyan }
-                      ]}
-                    >
-                      {isMember && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.checkboxCardTitle, { color: colors.text }]}>
-                        I am a member of this channel
-                      </Text>
-                      <Text style={[s.checkboxCardDesc, { color: colors.muted }]}>
-                        Only active members can auto-copy trades from this channel.
-                      </Text>
-                    </View>
-                  </Pressable>
-
-                  {/* Info Notice Box */}
-                  <View style={s.whyAskBox}>
-                    <Ionicons name="information-circle-outline" size={14} color={colors.subtle} style={{ marginTop: 1 }} />
-                    <Text style={[s.whyAskText, { color: colors.muted }]}>
-                      This is required to bind your Trallo ingestion engine to this source feed.
-                    </Text>
-                  </View>
-                </View>
-
-                {/* CTA Buttons */}
-                {channelError !== '' && (
-                  <Text style={{ color: colors.tradeLoss, fontFamily: 'Inter_500Medium', fontSize: 13, marginTop: 8, paddingHorizontal: 4 }}>{channelError}</Text>
-                )}
-                <View style={s.btnRow}>
-                  <Pressable
-                    onPress={handleBackStep}
-                    style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, flex: 1 }, pressed && { opacity: 0.7 }]}
-                  >
-                    <Text style={[s.secondaryBtnText, { color: colors.subtle }]}>Back</Text>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={async () => {
-                      if (!isMember) return;
-                      setChannelError('');
-                      setIsChannelConnecting(true);
-                      try {
-                        await signalsApi.subscribeChannel(
-                          channelInput.trim(),
-                          activeChannelName,
-                        );
-                        handleConnectChannel();
-                      } catch (e: any) {
-                        setChannelError(e.response?.data?.message || 'Failed to connect channel. Try again.');
-                      } finally {
-                        setIsChannelConnecting(false);
-                      }
-                    }}
-                    disabled={!isMember || isChannelConnecting}
-                    style={({ pressed }) => [
-                      s.primaryBtn,
-                      { backgroundColor: colors.cyan, flex: 2.2 },
-                      (!isMember || pressed || isChannelConnecting) && { opacity: 0.7 },
-                    ]}
-                  >
-                    <Text style={[s.primaryBtnText, { color: colors.base }]}>
-                      {isChannelConnecting ? 'Connecting...' : 'Connect Channel'}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-            )}
-
-            {/* ── STEP 3: CONNECTED SUCCESS ──────────────────── */}
-            {step === 4 && (
               <View style={s.container}>
                 <View style={s.iconTitleContainer}>
                   <Text style={[s.headingLarge, { color: colors.text }]}>
@@ -526,7 +318,7 @@ export default function Onboarding() {
                   </Pressable>
 
                   <Pressable
-                    onPress={() => setStep(5)} // Continue to Risk Shield
+                    onPress={() => setStep(3)} // Continue to Risk Shield
                     style={({ pressed }) => [
                       s.primaryBtn,
                       { backgroundColor: colors.cyan, flex: 1.3 },
@@ -539,8 +331,10 @@ export default function Onboarding() {
               </View>
             )}
 
-            {/* ── STEP 4: RISK SHIELD ────────────────────────── */}
-            {step === 5 && (
+            {/* ── STEP 3: RISK SHIELD ────────────────────────── */}
+            {step === 3 && (
+              <View style={s.container}>
+                <View style={s.iconTitleContainer}>
               <View style={s.container}>
                 <View style={s.iconTitleContainer}>
                   <View style={[s.stepIconBox, { backgroundColor: colors.elevated }]}>
