@@ -17,7 +17,7 @@ export class CredentialEncryptionService {
     this.key = Buffer.from(config.getOrThrow<string>('ENCRYPTION_KEY'), 'base64');
     if (!process.env.ENCRYPTION_KEY) {
       console.warn('ENCRYPTION_KEY not set, using dummy key');
-      this.key = 'dummy-key-for-development-only';
+      this.key = Buffer.from('dummy-key-for-development-only-12345678901234');
       return;
     }
   }
