@@ -12,7 +12,7 @@ async function bootstrap(): Promise<void> {
 
   app.use(helmet());
   app.enableCors({
-    origin: allowedOrigins.length > 0 ? allowedOrigins : false,
+    origin: true,
     credentials: true,
   });
   app.useGlobalPipes(
