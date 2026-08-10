@@ -4,12 +4,16 @@ import { Signal } from './signal.entity';
 @Entity('signal_sources')
 @Index(['platform', 'external_chat_id'], { unique: true })
 @Index(['is_trusted', 'created_at'])
+@Index(['userId'])
 export class SignalSource {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   @Column({ type: 'varchar', length: 50 })
   platform!: 'telegram' | 'email' | 'webhook' | 'api';
+
+  @Column({ type: 'uuid', nullable: true })
+  userId!: string | null;
 
   @Column({ type: 'varchar', length: 255 })
   external_chat_id!: string;

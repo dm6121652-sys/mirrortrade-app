@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { onboardingApi } from '@/api/onboarding';
+import { brokerApi } from '@/api/broker';
+import { signalsApi } from '@/api/signals';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -32,6 +34,10 @@ export default function Onboarding() {
   const [derivToken, setDerivToken] = useState('');
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishError, setFinishError] = useState('');
+  const [isBrokerConnecting, setIsBrokerConnecting] = useState(false);
+  const [brokerError, setBrokerError] = useState('');
+  const [isChannelConnecting, setIsChannelConnecting] = useState(false);
+  const [channelError, setChannelError] = useState('');
 
   const activeChannelName = channelInput.trim() || 'Habbyforex Signals';
 
@@ -216,8 +222,29 @@ export default function Onboarding() {
 
                 <View style={s.btnRow}>
                   <Pressable onPress={handleBackStep} style={[s.secondaryBtn, { borderColor: colors.border }]}><Text style={[s.secondaryBtnText, { color: colors.subtle }]}>Back</Text></Pressable>
-                  <Pressable onPress={handleNextStep} disabled={!derivToken.trim()} style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.cyan, flex: 1.4 }, (!derivToken.trim() || pressed) && { opacity: .65 }]}><Text style={[s.primaryBtnText, { color: colors.base }]}>Connect Deriv Demo</Text></Pressable>
+                  <Pressable
+                    onPress={async () => {
+                      setBrokerError('');
+                      if (!derivToken.trim()) return;
+                      setIsBrokerConnecting(true);
+                      try {
+                        await brokerApi.connect(derivToken.trim(), 'deriv-demo');
+                        handleNextStep();
+                      } catch (e: any) {
+                        setBrokerError(e.response?.data?.message || 'Failed to connect broker. Check your token.');
+                      } finally {
+                        setIsBrokerConnecting(false);
+                      }
+                    }}
+                    disabled={!derivToken.trim() || isBrokerConnecting}
+                    style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.cyan, flex: 1.4 }, (!derivToken.trim() || pressed || isBrokerConnecting) && { opacity: .65 }]}
+                  >
+                    <Text style={[s.primaryBtnText, { color: colors.base }]}>{isBrokerConnecting ? 'Connecting...' : 'Connect Deriv Demo'}</Text>
+                  </Pressable>
                 </View>
+                {brokerError !== '' && (
+                  <Text style={{ color: colors.danger, fontFamily: 'Inter_500Medium', fontSize: 13, marginTop: 8 }}>{brokerError}</Text>
+                )}
                 <Pressable onPress={handleNextStep} style={s.laterLink}><Text style={[s.laterLinkText, { color: colors.subtle }]}>I’ll connect my broker later</Text></Pressable>
               </View>
             )}
@@ -379,28 +406,44 @@ export default function Onboarding() {
                 </View>
 
                 {/* CTA Buttons */}
+                {channelError !== '' && (
+                  <Text style={{ color: colors.danger, fontFamily: 'Inter_500Medium', fontSize: 13, marginTop: 8, paddingHorizontal: 4 }}>{channelError}</Text>
+                )}
                 <View style={s.btnRow}>
                   <Pressable
                     onPress={handleBackStep}
-                    style={({ pressed }) => [
-                      s.secondaryBtn,
-                      { borderColor: colors.border, flex: 1 },
-                      pressed && { opacity: 0.7 },
-                    ]}
+                    style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, flex: 1 }, pressed && { opacity: 0.7 }]}
                   >
                     <Text style={[s.secondaryBtnText, { color: colors.subtle }]}>Back</Text>
                   </Pressable>
 
                   <Pressable
-                    onPress={handleConnectChannel}
-                    disabled={!isMember}
+                    onPress={async () => {
+                      if (!isMember) return;
+                      setChannelError('');
+                      setIsChannelConnecting(true);
+                      try {
+                        await signalsApi.subscribeChannel(
+                          channelInput.trim(),
+                          activeChannelName,
+                        );
+                        handleConnectChannel();
+                      } catch (e: any) {
+                        setChannelError(e.response?.data?.message || 'Failed to connect channel. Try again.');
+                      } finally {
+                        setIsChannelConnecting(false);
+                      }
+                    }}
+                    disabled={!isMember || isChannelConnecting}
                     style={({ pressed }) => [
                       s.primaryBtn,
                       { backgroundColor: colors.cyan, flex: 2.2 },
-                      (!isMember || pressed) && { opacity: 0.7 },
+                      (!isMember || pressed || isChannelConnecting) && { opacity: 0.7 },
                     ]}
                   >
-                    <Text style={[s.primaryBtnText, { color: colors.base }]}>Connect Channel</Text>
+                    <Text style={[s.primaryBtnText, { color: colors.base }]}>
+                      {isChannelConnecting ? 'Connecting...' : 'Connect Channel'}
+                    </Text>
                   </Pressable>
                 </View>
               </View>
