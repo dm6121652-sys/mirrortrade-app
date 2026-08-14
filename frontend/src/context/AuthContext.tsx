@@ -6,14 +6,16 @@ import { useRouter, useSegments } from 'expo-router';
 interface User {
   id: string;
   email: string;
+  firstName?: string;
   onboardingCompleted?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (email: string, pass: string) => Promise<void>;
-  signUp: (email: string, pass: string) => Promise<void>;
+  signIn: (email: string, pass: string) => Promise<User>;
+  signUp: (email: string, firstName: string, pass: string) => Promise<User>;
+  markOnboardingComplete: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -47,12 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === 'auth' || segments[0] === 'welcome';
+    const inAuthScreen = segments[0] === 'auth';
+    const onWelcomeScreen = segments[0] === 'welcome';
     const inOnboarding = segments[0] === 'onboarding';
 
-    if (!user && !inAuthGroup) {
-      // Not logged in → go to welcome
-      router.replace('/welcome');
     } else if (user && inAuthGroup) {
       // Logged in but on auth screen → route based on onboarding status
       if (!user.onboardingCompleted) {
@@ -64,6 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Onboarding already done → skip to dashboard
       router.replace('/(tabs)');
     }
+      // Onboarding already done → skip to dashboard
+      router.replace('/(tabs)');
+    }
   }, [user, segments, isLoading]);
 
   const signIn = async (email: string, pass: string) => {
@@ -71,13 +74,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await setItem('auth_token', data.accessToken);
     await setItem('user_data', JSON.stringify(data.user));
     setUser(data.user);
+    return data.user;
   };
 
-  const signUp = async (email: string, pass: string) => {
-    const data = await authApi.register(email, pass);
+  const signUp = async (email: string, firstName: string, pass: string) => {
+    const data = await authApi.register(email, firstName, pass);
     await setItem('auth_token', data.accessToken);
     await setItem('user_data', JSON.stringify(data.user));
     setUser(data.user);
+    return data.user;
   };
 
   const signOut = async () => {
@@ -86,8 +91,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const markOnboardingComplete = async () => {
+    if (!user) return;
+    const updatedUser = { ...user, onboardingCompleted: true };
+    await setItem('user_data', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, markOnboardingComplete }}>
       {children}
     </AuthContext.Provider>
   );
