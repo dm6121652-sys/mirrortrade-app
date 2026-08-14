@@ -1,8 +1,11 @@
 import axios from 'axios';
 import { getItem } from '../utils/storage';
 
-// Use environment variable if set, otherwise fallback to Railway deployment URL
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://mirrortrade-app-production.up.railway.app/api/v1';
+const envBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+const defaultRailwayUrl = 'https://mirrortrade-app-production.up.railway.app/api/v1';
+const BASE_URL = envBaseUrl && !/localhost|127\.0\.0\.1/i.test(envBaseUrl)
+  ? envBaseUrl
+  : defaultRailwayUrl;
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
